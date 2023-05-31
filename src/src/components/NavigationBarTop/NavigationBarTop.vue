@@ -1,20 +1,19 @@
 <template>
-    <el-tabs v-model="activeName" class="demo-tabs" @tab-click="handleClick">
-        <el-tab-pane label="User" name="first">User</el-tab-pane>
-        <el-tab-pane label="Config" name="second">Config</el-tab-pane>
+    <el-tabs v-model="activeName" type="card" class="demo-tabs" @tab-click="handleClick">
+        <el-tab-pane label="高值库房工作量统计" name="first">
+            <queybar />
+        </el-tab-pane>
+        <!-- <el-tab-pane label="Config" name="second">Config</el-tab-pane>
         <el-tab-pane label="Role" name="third">Role</el-tab-pane>
-        <el-tab-pane label="Task" name="fourth">Task</el-tab-pane>
+        <el-tab-pane label="Task" name="fourth">Task</el-tab-pane> -->
     </el-tabs>
 </template>
-<script lang="ts" setup>
+<script setup>
 import { ref } from "vue";
-import type { TabsPaneContext } from "element-plus";
+import Queybar from "../QueryBar/Queybar.vue";
 
 const activeName = ref("first");
-
-const handleClick = (tab: TabsPaneContext, event: Event) => {
-    console.log(tab, event);
-};
+const handleClick = () => {};
 </script>
 <style>
 .demo-tabs > .el-tabs__content {
