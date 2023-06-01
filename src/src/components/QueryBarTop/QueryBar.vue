@@ -3,7 +3,7 @@
         <div class="block">
             <p class="dateTime-select">时间区间:</p>
             <el-config-provider>
-                <el-date-picker v-model="value" type="daterange" start-placeholder="开始日期" end-placeholder="结束日期" />
+                <el-date-picker v-model="value" type="daterange" value-format="YYYY-MM-DD" start-placeholder="开始日期" end-placeholder="结束日期" />
             </el-config-provider>
         </div>
         <el-button type="primary" class="qry-btn">查询</el-button>
