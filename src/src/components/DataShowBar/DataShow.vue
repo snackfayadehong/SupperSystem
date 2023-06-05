@@ -1,5 +1,5 @@
 <template>
-    <el-table :data="tableData" style="width: 100%" class="elTable">
+    <el-table :data="dataList" style="width: 100%" class="elTable">
         <!-- 入库信息 -->
         <el-table-column prop="name" label="姓名" width="150" align="center" />
         <el-table-column label="入库信息" align="center">
@@ -30,10 +30,11 @@
 
 <script setup>
 import bus from "../../eventBus";
-var tableData = [];
-bus.on("getData", data => {
-    tableData = data;
-    console.log(tableData);
+import { ref } from "vue";
+const dataList = ref([]);
+
+bus.on("getData", res => {
+    dataList.value = res;
 });
 </script>
 
