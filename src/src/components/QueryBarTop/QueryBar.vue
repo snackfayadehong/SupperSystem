@@ -13,12 +13,14 @@
 <script setup>
 import myAxios from "../../api/myAxios.js";
 import { ref } from "vue";
+import bus from "../../eventBus";
 
 const queryDate = ref("");
 
 const query = async () => {
-    const res = await myAxios.post("/post");
-    console.log(res.data);
+    var value = JSON.parse(JSON.stringify(queryDate.value));
+    const res = await myAxios.post("/getWorkload", { startTime: value[0], endTime: value[1] });
+    bus.emit("getData", res.data.Data);
 };
 </script>
 <style scoped>

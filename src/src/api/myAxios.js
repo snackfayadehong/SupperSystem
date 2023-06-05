@@ -12,7 +12,7 @@ const myAxios = axios.create({
     withCredentialsL: false //跨域请求需要凭证
 });
 
-myAxios.defaults.headers.post["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";
+myAxios.defaults.headers.post["Content-Type"] = "application/json;charset=UTF-8";
 
 let loadingInstance = null;
 // 请求拦截器

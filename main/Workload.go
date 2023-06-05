@@ -2,6 +2,8 @@ package main
 
 import (
 	clientDb "WorkloadQuery/db"
+	"WorkloadQuery/middleware"
+	"WorkloadQuery/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -14,9 +16,13 @@ type Employee struct {
 func main() {
 	r := gin.Default()
 	r.Use(Cors()) // 跨域
-	r.POST("/api/post", func(c *gin.Context) {
-		clientDb.UserWorkloadQuery("2023-04-01", "2023-05-01")
-	})
+	// r.POST("/api/post", func(c *gin.Context) {
+	// 	clientDb.UserWorkloadQuery("2023-04-01", "2023-05-01")
+	// })
+	router := r.Group("/api")
+	{
+		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)
+	}
 	err := r.Run("127.0.0.1:3007")
 	if err != nil {
 		return

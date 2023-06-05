@@ -3,21 +3,21 @@
         <!-- 入库信息 -->
         <el-table-column prop="name" label="姓名" width="150" align="center" />
         <el-table-column label="入库信息" align="center">
-            <el-table-column prop="In-billAmount" label="单据数" align="center" />
-            <el-table-column prop="In-specAmount" label="品规数" align="center" />
-            <el-table-column prop="In-totalAmount" label="总价格" align="center" />
+            <el-table-column prop="prodAcBill" label="单据数" align="center" />
+            <el-table-column prop="prodAcSpec" label="品规数" align="center" />
+            <el-table-column prop="prodAcTotal" label="总价格" align="center" />
         </el-table-column>
         <!-- 出库信息 -->
         <el-table-column label="出库信息" align="center">
-            <el-table-column prop="Out-billAmount" label="单据数" align="center" />
-            <el-table-column prop="Out-specAmount" label="品规数" align="center" />
-            <el-table-column prop="Out-toalAmount" label="总价格" align="center" />
+            <el-table-column prop="prodDpBill" label="单据数" align="center" />
+            <el-table-column prop="prodDpSpec" label="品规数" align="center" />
+            <el-table-column prop="OprodDpTotal" label="总价格" align="center" />
         </el-table-column>
         <!-- 退还信息 -->
         <el-table-column label="退还信息" align="center">
-            <el-table-column prop="Refund-billAmount" label="单据数" align="center" />
-            <el-table-column prop="Refund-specAmount" label="品规数" align="center" />
-            <el-table-column prop="Refund-totalAmount" label="总价格" align="center" />
+            <el-table-column prop="refBill" label="单据数" align="center" />
+            <el-table-column prop="refSpec" label="品规数" align="center" />
+            <el-table-column prop="refTotal" label="总价格" align="center" />
         </el-table-column>
         <!-- 合计信息 -->
         <el-table-column label="合计信息" align="center">
@@ -29,7 +29,12 @@
 </template>
 
 <script setup>
-const tableData = [];
+import bus from "../../eventBus";
+var tableData = [];
+bus.on("getData", data => {
+    tableData = data;
+    console.log(tableData);
+});
 </script>
 
 <style scoped>
