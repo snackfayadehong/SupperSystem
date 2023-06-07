@@ -1,12 +1,13 @@
 package clientDb
 
 import (
-	"crypto"
+	"WorkloadQuery/encry"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
@@ -16,9 +17,8 @@ import (
 )
 
 var (
-	DB         *gorm.DB
-	privateKey *rsa.PrivateKey // 秘钥
-	configs    *config
+	DB      *gorm.DB
+	configs *config
 )
 
 type config struct {
@@ -66,61 +66,77 @@ func InitDb() error {
 
 // 读取配置文件密码加密后重新写入配置文件
 func writeEncryptionPwd() error {
-	file, err := os.OpenFile("../config.json", os.O_RDWR, 0666)
+	// 生成公钥密钥文件
+	encry.GenerateRSAKey(2048)
+	// 打开public.pem公钥文件
+	file, err := os.Open("../encry/public.pem")
+	defer file.Close()
+	// 读取公钥
+	info, _ := file.Stat()
+	buf := make([]byte, info.Size())
+	file.Read(buf)
+	// pem解码
+	block, _ := pem.Decode(buf)
+	// x509
+	publicKeyInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	v, _ := io.ReadAll(file)
+	// 类型断言
+	publicKey := publicKeyInterface.(*rsa.PublicKey)
+	configFile, err := os.OpenFile("../config.json", os.O_RDWR, 0666)
+	defer configFile.Close()
+	if err != nil {
+		return err
+	}
+	v, _ := io.ReadAll(configFile)
 	err = json.Unmarshal(v, &configs)
 	if err != nil {
 		return err
 	}
 	// 密码加密
-	encPwd, err := encryptionPwd(configs.DBClient.Password)
+	// 对明文进行加密
+	encPwd, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, []byte(configs.DBClient.Password))
 	if err != nil {
 		return err
 	}
-	configs.DBClient.Password = encPwd
+	// 转base64
+	base64Pwd := base64.StdEncoding.EncodeToString(encPwd)
+	configs.DBClient.Password = base64Pwd
 	// 标记加密
 	configs.IsEc = 1
 	newConfig, err := json.Marshal(configs)
-	_, err = file.WriteAt(newConfig, 0)
+	_, err = configFile.WriteAt(newConfig, 0)
 	if err != nil {
 		return err
 	}
 	return err
 }
 
-// 加密
-func encryptionPwd(pwd string) (encryptionPwd string, err error) {
-	// 生成私钥
-	privateKey, err = rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return
-	}
-	// 生成公钥
-	publicKey := privateKey.PublicKey
-	// 根据公钥加密
-	encryptionBytes, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, &publicKey, []byte(pwd), nil)
-	if err != nil {
-		return
-	}
-	// 转base64
-	encryptionPwd = base64.StdEncoding.EncodeToString(encryptionBytes)
-	// 把加密后的密码赋值给结构体
-	configs.DBClient.Password = encryptionPwd
-	return encryptionPwd, nil
-}
-
 // 解密
 func decryptionPwd() (pwd string, err error) {
-	fmt.Println(configs.DBClient.Password)
+	// 打开私钥文件
+	file, err := os.Open("../encry/private.pem")
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	// 读取私钥文件内容
+	info, _ := file.Stat()
+	buf := make([]byte, info.Size())
+	file.Read(buf)
+	// pem解码
+	block, _ := pem.Decode(buf)
+	// x509解码
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return
+	}
 	pwdByte, err := base64.StdEncoding.DecodeString(configs.DBClient.Password)
 	if err != nil {
 		return
 	}
-	decryptedBytes, err := privateKey.Decrypt(rand.Reader, pwdByte, &rsa.OAEPOptions{Hash: crypto.SHA256})
+	decryptedBytes, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, pwdByte)
 	if err != nil {
 		return
 	}

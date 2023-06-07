@@ -4,6 +4,7 @@ import (
 	clientDb "WorkloadQuery/db"
 	"WorkloadQuery/middleware"
 	"WorkloadQuery/service"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -51,6 +52,7 @@ func Cors() gin.HandlerFunc {
 func init() {
 	err := clientDb.InitDb()
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 }
