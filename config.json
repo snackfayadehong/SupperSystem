@@ -1,1 +1,9 @@
-{"DBClient":{"ip":"127.0.0.1","username":"sa","password":"vkyOvR60cNKvlbmZlkJOBuS9CQq/qNN0iQ2iqkzkdP19PFSPm9G6V1HVCyFjW7fvtE5i9zJZV3tTQNbGrS1yhgzWGxnV6srOu+Kt6IEAA3jmrTj/fSEFCsqr2PTUsjIsDpcKN89iBU//M1w4QkhgZUyycofm1QOdhZ/IyfxLJp6kXAZ8GD0kNCNNh4Qa/BRdFIJKzeLRXyOy0vUTeN0HaB1/dhjF4PqT5QgVfd1nzyVPeSKSI/G+xArq+x5XpRhh3Cs9rndu+o54kLMD3ySKYhe0pbgjfQ7nH0+WuijMIJ9WiOnwsET3BjAP5NQWNOLyw0DRh4NfHVnvebclC/4ZfA==","db_name":"WZ_MY"},"isEc":1}
+{
+  "DBClient": {
+    "ip": "127.0.0.1",
+    "username": "sa",
+    "password": "20010126",
+    "db_name": "WZ_MY"
+  },
+  "isEc": 0
+}
