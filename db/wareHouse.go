@@ -47,11 +47,11 @@ func UserWorkloadQuery(startTime string, endTime string) []UserWorkloadInfo {
 	UserWorkloadMap := make(map[string]UserWorkloadInfo) // 合并数据map
 	var UserWorkload []UserWorkloadInfo                  // 合并后的数据切片
 	// 入库
-	DB.Raw(UserProdAcceptSql, startTime, endTime).Find(&ProdAccept)
+	DB.Raw(UserProdAcceptSql, startTime, endTime, startTime, endTime).Find(&ProdAccept)
 	// 出库
-	DB.Raw(UserProdDpcSql, startTime, endTime).Find(&DpProd)
+	DB.Raw(UserProdDpcSql, startTime, endTime, startTime, endTime).Find(&DpProd)
 	// 退货
-	DB.Raw(UserProdRefundSql, startTime, endTime).Find(&RefProd)
+	DB.Raw(UserProdRefundSql, startTime, endTime, startTime, endTime).Find(&RefProd)
 
 	// 合并数据
 	for i := 0; i < len(ProdAccept) || i < len(DpProd) || i < len(RefProd); i++ {
@@ -75,7 +75,7 @@ func UserWorkloadQuery(startTime string, endTime string) []UserWorkloadInfo {
 			usm := UserWorkloadMap[RefProd[i].Name]
 			usm.Name = RefProd[i].Name
 			usm.RefBill = RefProd[i].RefBill
-			usm.RefSpec = RefProd[i].RefBill
+			usm.RefSpec = RefProd[i].RefSpec
 			usm.RefTotal = RefProd[i].RefTotal
 			UserWorkloadMap[RefProd[i].Name] = usm
 		}

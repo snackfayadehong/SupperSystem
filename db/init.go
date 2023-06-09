@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -18,28 +19,33 @@ import (
 
 var (
 	DB      *gorm.DB
-	configs *config
+	Configs *Config
 )
 
-type config struct {
+type Config struct {
+	Server struct {
+		IP       string `json:"Ip"`
+		Port     string `json:"Port"`
+		RunModel string `json:"RunModel"`
+	} `json:"Server"`
 	DBClient struct {
 		IP       string `json:"ip"`
 		Username string `json:"username"`
 		Password string `json:"password"`
 		DbName   string `json:"db_name"`
+		IsEc     int    `json:"isEc"`
 	} `json:"DBClient"`
-	IsEc int `json:"isEc"`
 }
 
-func InitDb() error {
+func Init() error {
 	var DbPwd string
 	file, err := os.OpenFile("../config.json", os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
 	v, _ := io.ReadAll(file)
-	err = json.Unmarshal(v, &configs)
-	if configs.IsEc == 0 {
+	err = json.Unmarshal(v, &Configs)
+	if Configs.DBClient.IsEc == 0 {
 		file.Close()
 		err = writeEncryptionPwd()
 		if err != nil {
@@ -53,7 +59,7 @@ func InitDb() error {
 	// [username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]
 	// dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?&loc=%s&encrypt=disable", userName, password, ipAddr, port, dbName, loc)
 	// dsn := "sqlserver://sa:密码@127.0.0.1:1433?database=dbStatus&encrypt=disable"
-	dsn := fmt.Sprintf("sqlserver://%s:%s@%s?database=%s&encrypt=disable", configs.DBClient.Username, DbPwd, configs.DBClient.IP, configs.DBClient.DbName)
+	dsn := fmt.Sprintf("sqlserver://%s:%s@%s?database=%s&encrypt=disable", Configs.DBClient.Username, DbPwd, Configs.DBClient.IP, Configs.DBClient.DbName)
 	DB, _ = gorm.Open(sqlserver.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   "TB_",
@@ -61,6 +67,18 @@ func InitDb() error {
 			NoLowerCase:   true,
 		},
 	})
+	// 根据配置文件设置选择程序环境
+	switch Configs.Server.RunModel {
+	case "debug":
+		gin.SetMode(gin.DebugMode)
+	case "release":
+		gin.SetMode(gin.ReleaseMode)
+		gin.DisableConsoleColor() // 禁用控制台颜色，将日志写入文件时不需要控制台颜色
+	case "test":
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.DebugMode)
+	}
 	return nil
 }
 
@@ -90,22 +108,22 @@ func writeEncryptionPwd() error {
 		return err
 	}
 	v, _ := io.ReadAll(configFile)
-	err = json.Unmarshal(v, &configs)
+	err = json.Unmarshal(v, &Configs)
 	if err != nil {
 		return err
 	}
 	// 密码加密
 	// 对明文进行加密
-	encPwd, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, []byte(configs.DBClient.Password))
+	encPwd, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, []byte(Configs.DBClient.Password))
 	if err != nil {
 		return err
 	}
 	// 转base64
 	base64Pwd := base64.StdEncoding.EncodeToString(encPwd)
-	configs.DBClient.Password = base64Pwd
+	Configs.DBClient.Password = base64Pwd
 	// 标记加密
-	configs.IsEc = 1
-	newConfig, err := json.Marshal(configs)
+	Configs.DBClient.IsEc = 1
+	newConfig, err := json.Marshal(Configs)
 	_, err = configFile.WriteAt(newConfig, 0)
 	if err != nil {
 		return err
@@ -132,7 +150,7 @@ func decryptionPwd() (pwd string, err error) {
 	if err != nil {
 		return
 	}
-	pwdByte, err := base64.StdEncoding.DecodeString(configs.DBClient.Password)
+	pwdByte, err := base64.StdEncoding.DecodeString(Configs.DBClient.Password)
 	if err != nil {
 		return
 	}

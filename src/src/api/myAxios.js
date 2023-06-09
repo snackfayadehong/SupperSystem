@@ -7,7 +7,7 @@ const myAxios = axios.create({
     // 环境切换
     // baseURL: process.env.NODE.ENV === "production" ? "http://127.0.0.1:3007/api" : "https://",
     baseURL: "http://127.0.0.1:3007/api",
-    timeout: 5000,
+    timeout: 10000,
     withCredentialsL: false //跨域请求需要凭证
 });
 
@@ -37,6 +37,9 @@ myAxios.interceptors.response.use(
     },
     err => {
         loadingInstance.close();
+        if (err.message.includes("timeout")) {
+            alert("网络异常,请重试！");
+        }
         return Promise.reject(err);
     }
 );
