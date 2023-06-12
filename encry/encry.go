@@ -23,7 +23,7 @@ func GenerateRSAKey(bits int) {
 	X509PrivateKey := x509.MarshalPKCS1PrivateKey(privateKey)
 	// 使用pem格式对x509输出的内容进行编码
 	// 创建文件保存私钥
-	privateFile, err := os.Create("../encry/private.pem")
+	privateFile, err := os.Create("encry/private.pem")
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +42,7 @@ func GenerateRSAKey(bits int) {
 	}
 	// pem格式编码
 	// 创建用于保存公钥的文件
-	publicFile, err := os.Create("../encry/public.pem")
+	publicFile, err := os.Create("encry/public.pem")
 	if err != nil {
 		panic(err)
 	}

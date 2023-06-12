@@ -39,7 +39,7 @@ type Config struct {
 
 func Init() error {
 	var DbPwd string
-	file, err := os.OpenFile("../config.json", os.O_RDWR, 0666)
+	file, err := os.OpenFile("config.json", os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func writeEncryptionPwd() error {
 	// 生成公钥密钥文件
 	encry.GenerateRSAKey(2048)
 	// 打开public.pem公钥文件
-	file, err := os.Open("../encry/public.pem")
+	file, err := os.Open("encry/public.pem")
 	defer file.Close()
 	// 读取公钥
 	info, _ := file.Stat()
@@ -102,7 +102,7 @@ func writeEncryptionPwd() error {
 	}
 	// 类型断言
 	publicKey := publicKeyInterface.(*rsa.PublicKey)
-	configFile, err := os.OpenFile("../config.json", os.O_RDWR, 0666)
+	configFile, err := os.OpenFile("config.json", os.O_RDWR, 0666)
 	defer configFile.Close()
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func writeEncryptionPwd() error {
 // 解密
 func decryptionPwd() (pwd string, err error) {
 	// 打开私钥文件
-	file, err := os.Open("../encry/private.pem")
+	file, err := os.Open("encry/private.pem")
 	if err != nil {
 		return
 	}

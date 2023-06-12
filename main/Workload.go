@@ -15,6 +15,9 @@ func main() {
 	r.Use(Cors()) // 跨域
 	r.Use(gin.Recovery())
 	logFile, logConfig, err := logger.InitLog()
+	if err != nil {
+		panic(err)
+	}
 	defer logFile.Close()
 	r.Use(gin.LoggerWithConfig(*logConfig))
 	router := r.Group("/api")
