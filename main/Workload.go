@@ -7,19 +7,21 @@ import (
 	"WorkloadQuery/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 func main() {
 	r := gin.New()
 	r.Use(Cors()) // 跨域
-	r.Use(gin.Recovery())
-	logFile, logConfig, err := logger.InitLog()
+	_, _, err := logger.InitLog()
 	if err != nil {
-		panic(err)
+		zap.L().Error("错误日志")
 	}
-	defer logFile.Close()
-	r.Use(gin.LoggerWithConfig(*logConfig))
+	// defer logFile.Close()
+	// r.Use(gin.LoggerWithConfig(*logConfig))
+	// r.Use(gin.Recovery())
+	r.Use(logger.GinLogger, logger.GinRecovery(true))
 	router := r.Group("/api")
 	{
 		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)
