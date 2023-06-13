@@ -19,7 +19,7 @@ import (
 const level = zapcore.InfoLevel
 
 // InitLog 日志
-func InitLog() (logFile *os.File, logConfig *gin.LoggerConfig, err error) {
+func InitLog() (err error) {
 	_, err = os.Stat("logs")
 	if os.IsNotExist(err) {
 		err = os.Mkdir("logs", 0700)

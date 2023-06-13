@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"go.uber.org/zap"
 	"os"
 )
 
@@ -16,7 +17,8 @@ func GenerateRSAKey(bits int) {
 	// Reader是一个全局、共享的密码用强随机数生成器
 	privateKey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
-		panic(err)
+		zap.L().Error("Error:", zap.Error(err))
+		return
 	}
 	// 保存私钥
 	// 通过x509标准将得到的ras私钥序列化为ASN.1 的 DER编码字符串
@@ -25,7 +27,8 @@ func GenerateRSAKey(bits int) {
 	// 创建文件保存私钥
 	privateFile, err := os.Create("encry/private.pem")
 	if err != nil {
-		panic(err)
+		zap.L().Error("Error:", zap.Error(err))
+		return
 	}
 	defer privateFile.Close()
 	// 构建一个pem.Block结构体对象
@@ -38,13 +41,15 @@ func GenerateRSAKey(bits int) {
 	// X509对公钥编码
 	X509PublicKey, err := x509.MarshalPKIXPublicKey(&publicKey)
 	if err != nil {
-		panic(err)
+		zap.L().Error("Error:", zap.Error(err))
+		return
 	}
 	// pem格式编码
 	// 创建用于保存公钥的文件
 	publicFile, err := os.Create("encry/public.pem")
 	if err != nil {
-		panic(err)
+		zap.L().Error("Error:", zap.Error(err))
+		return
 	}
 	defer publicFile.Close()
 	// 创建一个pem.Block结构体对象
