@@ -4,9 +4,9 @@
             <query-bar />
             <data-show />
         </el-tab-pane>
-        <!-- <el-tab-pane label="Config" name="second">Config</el-tab-pane>
-        <el-tab-pane label="Role" name="third">Role</el-tab-pane>
-        <el-tab-pane label="Task" name="fourth">Task</el-tab-pane> -->
+        <el-tab-pane label="调拨单未上账统计" name="second">调拨单未上账统计</el-tab-pane>
+        <el-tab-pane label="计费未核对数据统计" name="third">计费未核对数据统计</el-tab-pane>
+        <!-- <el-tab-pane label="Task" name="fourth">Task</el-tab-pane> -->
     </el-tabs>
 </template>
 <script setup>
