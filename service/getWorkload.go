@@ -1,7 +1,7 @@
 package service
 
 import (
-	clientDb "WorkloadQuery/db"
+	"WorkloadQuery/controller"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"net/http"
@@ -17,7 +17,7 @@ func GetWorkload(c *gin.Context) {
 	_ = c.ShouldBindBodyWith(&rep, binding.JSON)
 	rep.Start += " 00:00:00.000"
 	rep.End += " 23:59:59.000"
-	uw := clientDb.UserWorkloadQuery(rep.Start, rep.End)
+	uw := controller.UserWorkloadQuery(rep.Start, rep.End)
 	if uw == nil || len(uw) == 0 {
 		c.JSON(http.StatusNoContent, gin.H{
 			"msg":  "无数据",
