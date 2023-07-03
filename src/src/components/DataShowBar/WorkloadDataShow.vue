@@ -32,8 +32,13 @@
 import bus from "../../eventBus";
 import { ref } from "vue";
 import _ from "lodash";
+import { getCurrentInstance } from "vue";
 
 var dataList = ref([]);
+const componentName = getCurrentInstance().type.name;
+
+// 将当前组件名称传到其他组件
+bus.emit("getCommName", componentName);
 
 bus.on("getData", res => {
     var actotal = 0.0;

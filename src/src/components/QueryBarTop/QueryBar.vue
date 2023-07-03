@@ -15,16 +15,41 @@ import myAxios from "../../api/myAxios.js";
 import { ref } from "vue";
 import bus from "../../eventBus";
 import dayjs from "dayjs";
-
-var end = dayjs().format("YYYY-MM-DD");
-var start = dayjs().subtract(6, "day").format("YYYY-MM-DD");
+import { getCurrentInstance } from "vue";
+// 格式化时间
+let end = dayjs().format("YYYY-MM-DD");
+let start = dayjs().subtract(6, "day").format("YYYY-MM-DD");
+// 时间
 const queryDate = ref("");
 queryDate.value = [start, end];
+
+// 调用组件名
+let commName = "";
+let currentCpn = getCurrentInstance();
+
+// 查询工作量数据
 const query = async () => {
-    var value = JSON.parse(JSON.stringify(queryDate.value));
-    const res = await myAxios.post("/getWorkload", { startTime: value[0], endTime: value[1] });
-    if (res == "") {
-        alert("无数据");
+    // 获取父组件名称,根据夫组件名称查询不同数据
+    commName = currentCpn.parent.proxy.name;
+    console.log(commName);
+    let res = "";
+    let value = JSON.parse(JSON.stringify(queryDate.value));
+    if (commName == "") {
+        alert("组件名为空");
+        return;
+    }
+    if (commName == "workload") {
+        // 工作量查询
+        let res = await myAxios.post("/getWorkload", { startTime: value[0], endTime: value[1] });
+        if (res == "") {
+            alert("无数据");
+        }
+    } else if (commName == "departmentCollar") {
+        // 未上账单据查询
+        let res = await myAxios.post("/getNoAccountEntry", { startTime: value[0], endTime: value[1] });
+        if (res == "") {
+            alert("无数据");
+        }
     }
     bus.emit("getData", res.data.Data);
 };
