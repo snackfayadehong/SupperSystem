@@ -1,11 +1,11 @@
 <template>
     <el-tabs v-model="activeName" type="card" class="demo-tabs" @tab-click="handleClick">
         <el-tab-pane label="高值库房工作量统计" name="workload">
-            <query-bar />
+            <query-bar parent-name="workload" />
             <workload-data-show />
         </el-tab-pane>
         <el-tab-pane label="调拨单未上账统计" name="departmentCollar">
-            <query-bar />
+            <query-bar parent-name="departmentCollar" />
             <depart-ment-collar-data-show />
         </el-tab-pane>
         <el-tab-pane label="计费未核对数据统计" name="third">计费未核对数据统计</el-tab-pane>
@@ -27,5 +27,11 @@ const handleClick = () => {};
     color: #6b778c;
     font-size: 32px;
     font-weight: 600;
+}
+.elTable {
+    --el-table-border-color: #a4b6e1;
+    --el-table-border: 1px solid #a4b6e1;
+    --el-table-header-text-color: black;
+    --el-text-color-secondary: black;
 }
 </style>

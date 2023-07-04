@@ -32,15 +32,14 @@
 import bus from "../../eventBus";
 import { ref } from "vue";
 import _ from "lodash";
-import { getCurrentInstance } from "vue";
 
 var dataList = ref([]);
-const componentName = getCurrentInstance().type.name;
 
-// 将当前组件名称传到其他组件
-bus.emit("getCommName", componentName);
-
-bus.on("getData", res => {
+bus.on("getWorkloadData", res => {
+    if (typeof res == "undefined") {
+        alert("无数据");
+        return;
+    }
     var actotal = 0.0;
     var dptotal = 0.0;
     var reftotal = 0.0;
@@ -65,11 +64,4 @@ bus.on("getData", res => {
 });
 </script>
 
-<style scoped>
-.elTable {
-    --el-table-border-color: #a4b6e1;
-    --el-table-border: 1px solid #a4b6e1;
-    --el-table-header-text-color: black;
-    --el-text-color-secondary: black;
-}
-</style>
+<style scoped></style>
