@@ -15,19 +15,20 @@ type Time struct {
 func GetNoAccountEntry(c *gin.Context) {
 	times := Time{}
 	_ = c.ShouldBindBodyWith(&times, binding.JSON)
+	times.Start += " 00:00:00.000"
 	times.End += " 23:59:59.000"
 	_ = c.ShouldBindBodyWith(&times, binding.JSON)
-	Ae := controller.NoAccountEntryQuery(&times.End)
+	Ae := controller.NoAccountEntryQuery(&times.Start, &times.End)
 
 	if Ae == nil || len(*Ae) == 0 {
 		c.JSON(http.StatusNoContent, gin.H{
 			"msg":  "无数据",
-			"data": "",
+			"Data": "",
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"msg":  "成功",
-			"data": Ae,
+			"Data": Ae,
 		})
 	}
 }
