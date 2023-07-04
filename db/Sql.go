@@ -91,5 +91,6 @@ DepartmentCollarCode
 from TB_DepartmentCollar 
 where 
 TreasuryDepartment = '200346' and Status = 61
+and BLDate >= ?
 and BLDate <= ? 
-Order by DepartmentCollarCode`
+Order by LeaderName`
