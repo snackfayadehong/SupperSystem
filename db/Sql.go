@@ -81,16 +81,34 @@ GROUP BY
 	d.EmployeeName`
 
 // NoAccountEntrySql 科室调拨未上账单据查询
-const NoAccountEntrySql = `SELECT 
+const NoAccountEntrySql = `SELECT
 DepartmentCollarCode
 ,BLDate
 ,LeadingDepartmentName
 ,LeaderName
 ,TreasuryDepartmentName
 ,BLMakerName
-from TB_DepartmentCollar 
-where 
+from TB_DepartmentCollar
+where
 TreasuryDepartment = '200346' and Status = 61
 and BLDate >= ?
-and BLDate <= ? 
+and BLDate <= ?
 Order by LeaderName`
+
+// UnCheckBillSql 计费未核对数据查询
+const UnCheckBillSql = `select
+a.BillNo,
+a.PatName,
+a.[Section],
+SUBSTRING(a.CgDoctor, 1, CHARINDEX('_', a.CgDoctor) - 1) AS Doctor,
+a.OperateName,
+a.CheckDate,
+CASE 
+	WHEN  DATEDIFF(day, a.CheckDate, GETDATE()) > 30 THEN '未核对(超过有效核对日期)'
+	ELSE '未核对'
+END AS CheckStatus
+ from T_Instrument_Use a 
+where a.Flag = 21 and a.Type = 2
+and a.CheckDate >= ? 
+and a.CheckDate <= ?
+ORDER BY a.SectionId,a.CheckDate`
