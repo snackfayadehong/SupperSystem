@@ -5,19 +5,24 @@ import (
 	"WorkloadQuery/model"
 )
 
+type QueryWorkloadTime struct {
+	StartTime string `json:"startTime" binding:"required"`
+	EndTime   string `json:"endTime" binding:"required"`
+}
+
 // UserWorkloadQuery  工作量查询
-func UserWorkloadQuery(startTime string, endTime string) []model.UserWorkloadInfo {
+func (workload *QueryWorkloadTime) UserWorkloadQuery() *[]model.UserWorkloadInfo {
 	var ProdAccept []model.UserProdAccept                      // 入库
 	var DpProd []model.DepartmentCollar                        // 出库
 	var RefProd []model.RefundProd                             // 退货
 	UserWorkloadMap := make(map[string]model.UserWorkloadInfo) // 合并数据map
 	var UserWorkload []model.UserWorkloadInfo                  // 合并后的数据切片
 	// 入库
-	clientDb.DB.Raw(clientDb.UserProdAcceptSql, startTime, endTime, startTime, endTime).Find(&ProdAccept)
+	clientDb.DB.Raw(clientDb.UserProdAcceptSql, workload.StartTime, workload.EndTime, workload.StartTime, workload.EndTime).Find(&ProdAccept)
 	// 出库
-	clientDb.DB.Raw(clientDb.UserProdDpcSql, startTime, endTime, startTime, endTime).Find(&DpProd)
+	clientDb.DB.Raw(clientDb.UserProdDpcSql, workload.StartTime, workload.EndTime, workload.StartTime, workload.EndTime).Find(&DpProd)
 	// 退货
-	clientDb.DB.Raw(clientDb.UserProdRefundSql, startTime, endTime, startTime, endTime).Find(&RefProd)
+	clientDb.DB.Raw(clientDb.UserProdRefundSql, workload.StartTime, workload.EndTime, workload.StartTime, workload.EndTime).Find(&RefProd)
 
 	// 合并数据
 	for i := 0; i < len(ProdAccept) || i < len(DpProd) || i < len(RefProd); i++ {
@@ -50,5 +55,5 @@ func UserWorkloadQuery(startTime string, endTime string) []model.UserWorkloadInf
 	for _, v := range UserWorkloadMap {
 		UserWorkload = append(UserWorkload, v)
 	}
-	return UserWorkload
+	return &UserWorkload
 }

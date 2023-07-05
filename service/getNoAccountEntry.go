@@ -7,20 +7,21 @@ import (
 	"net/http"
 )
 
-type Time struct {
-	Start string `json:"startTime" binding:"required"`
-	End   string `json:"endTime" binding:"required"`
+type QueryAccountEntryTime struct {
+	StartTime string `json:"startTime" binding:"required"`
+	EndTime   string `json:"endTime" binding:"required"`
 }
 
 func GetNoAccountEntry(c *gin.Context) {
-	times := Time{}
-	_ = c.ShouldBindBodyWith(&times, binding.JSON)
-	times.Start += " 00:00:00.000"
-	times.End += " 23:59:59.000"
-	_ = c.ShouldBindBodyWith(&times, binding.JSON)
-	Ae := controller.NoAccountEntryQuery(&times.Start, &times.End)
-
-	if Ae == nil || len(*Ae) == 0 {
+	// 查询时间区间
+	NoAccountEntryTimeInterval := controller.QueryAccountEntryTime{}
+	// 将请求的时间绑定到NoAccountEntryTimeInterval
+	_ = c.ShouldBindBodyWith(&NoAccountEntryTimeInterval, binding.JSON)
+	NoAccountEntryTimeInterval.StartTime += " 00:00:00.000"
+	NoAccountEntryTimeInterval.EndTime += " 23:59:59.000"
+	// 调用方法返回未上账数据
+	NoAccountEntryBills := NoAccountEntryTimeInterval.NoAccountEntryQuery()
+	if NoAccountEntryBills == nil || len(*NoAccountEntryBills) == 0 {
 		c.JSON(http.StatusNoContent, gin.H{
 			"msg":  "无数据",
 			"Data": "",
@@ -28,7 +29,7 @@ func GetNoAccountEntry(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"msg":  "成功",
-			"Data": Ae,
+			"Data": NoAccountEntryBills,
 		})
 	}
 }
