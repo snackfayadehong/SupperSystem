@@ -44,14 +44,14 @@ const query = async () => {
     // commName = currentCpn.parent.proxy.name;
     // console.log(commName);
     let res = "";
-    let value = JSON.parse(JSON.stringify(queryDate.value));
+    let Timevalue = JSON.parse(JSON.stringify(queryDate.value));
     if (props.parentName == "") {
         alert("组件名为空");
         return;
     }
     if (props.parentName == "workload") {
         // 工作量查询
-        res = await myAxios.post("/getWorkload", { startTime: value[0], endTime: value[1] });
+        res = await myAxios.post("/getWorkload", { startTime: Timevalue[0], endTime: Timevalue[1] });
         if (res == "") {
             alert("无数据");
             return;
@@ -59,11 +59,18 @@ const query = async () => {
         bus.emit("getWorkloadData", res.Data);
     } else if (props.parentName == "departmentCollar") {
         // 未上账单据查询
-        res = await myAxios.post("/getNoAccountEntry", { startTime: value[0], endTime: value[1] });
+        res = await myAxios.post("/getNoAccountEntry", { startTime: Timevalue[0], endTime: Timevalue[1] });
         if (res == "") {
             alert("无数据");
         }
         bus.emit("getDepartmenCollarData", res.Data);
+    } else if ((props.parentName = "UnCheckBills")) {
+        // 未核对数据查询
+        res = await myAxios.post("/getUnCheckBills", { startTime: Timevalue[0], endTime: Timevalue[1] });
+        if (res == "") {
+            alert("无数据");
+        }
+        bus.emit("getUnCheckBills", res.Data);
     }
 };
 </script>
