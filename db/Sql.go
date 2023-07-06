@@ -88,6 +88,7 @@ DepartmentCollarCode
 ,LeaderName
 ,TreasuryDepartmentName
 ,BLMakerName
+,'已审核(未出库)' as Flag
 from TB_DepartmentCollar
 where
 TreasuryDepartment = '200346' and Status = 61
