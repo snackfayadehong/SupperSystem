@@ -38,14 +38,14 @@ FROM
   WHERE q.Status IN ('21', '51','61') AND p.IsVoid = 0 
 	AND q.BLDate >= ?
 	AND q.BLDate <= ?
-	and q.TreasuryDepartment = '200346'
+	and q.TreasuryDepartment in ('200346','200418') 
   GROUP BY q.DepartmentCollarID,q.BLMakerName 
 )AS subQuery
 GROUP BY BLMakerName) as dp on dp.BLMakerName = a.BLMakerName
 WHERE
 	a.Status IN ( '21', '51', '61' ) 
   	AND b.IsVoid = 0
-	AND a.TreasuryDepartment = '200346' 
+	AND a.TreasuryDepartment in ('200346','200418') 
 	AND a.BLDate>= ?
 	AND a.BLDate<= ?
 GROUP BY
