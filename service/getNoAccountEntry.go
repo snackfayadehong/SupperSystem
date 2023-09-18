@@ -7,11 +7,6 @@ import (
 	"net/http"
 )
 
-type QueryAccountEntryTime struct {
-	StartTime string `json:"startTime" binding:"required"`
-	EndTime   string `json:"endTime" binding:"required"`
-}
-
 func GetNoAccountEntry(c *gin.Context) {
 	// 查询时间区间
 	NoAccountEntryTimeInterval := controller.QueryAccountEntryTime{}

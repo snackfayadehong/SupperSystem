@@ -115,3 +115,44 @@ where a.Flag = 21 and a.Type = 2
 and a.CheckDate >= ? 
 and a.CheckDate <= ?
 ORDER BY a.SectionId,a.CheckDate`
+
+// NotDeliveredPurchaseSummarySql 采购订单未到货统计
+const NotDeliveredPurchaseSummarySql = `select 
+ ps.PurchaseSummaryID
+,ps.PurchaseSummaryCode
+,ps.DepartmentName
+,ps.StatusName 
+,ps.MakeName
+,ps.AuditorDate
+,ps.Remark
+,CONVERT(decimal(18,2),ps.AllMoney)  as AllMoney
+,ps.GoodStatusName
+,ps.SupplierName
+from dbo.V_PurchaseSummary ps with(nolock) 
+where ps.Status in ('71','91') -- 91已下单,71部分到货
+and ps.AuditorDate >= ?
+and ps.AuditorDate <= ?
+and ps.Remark not like '%高低储%'
+order by ps.SupplierName`
+
+// NotDeliveredPurchaseSummaryDetailSql 采购订单未到货明细统计
+const NotDeliveredPurchaseSummaryDetailSql = `select  
+ psd.PurchaseSummaryID
+,prod.Code
+,prod.Name as 'ProdName'
+,prod.HospitalSpec
+,ent.EnterpriseName
+,CONVERT(decimal(18,2),psd.UnitPrice) as 'UnitPrice'
+,spec.Name as 'SpecName'
+,CONVERT(decimal(18,2),psd.Amount) as 'Amount'
+,CONVERT(decimal(18,2),psd.FactInAmount) as 'FactInAmount'
+,CONVERT(decimal(18,2),psd.RefundAmount)  as 'RefundAmount'
+,CONVERT(decimal(18,2),psd.Amount - psd.FactInAmount) as 'NotDeliveredAmount'
+,psd.Remark
+from dbo.TB_PurchaseSummaryDetail psd with(nolock)
+left join TB_ProductInfo prod on prod.ProductInfoID = psd.ProductInfoID
+left join TB_EnterpriseInfo ent on ent.EnterpriseID = prod.DefaultSupplierID
+left join TB_SpecUnit spec on spec.SpecID = psd.Unit
+where psd.IsVoid = 0 -- 明细有效
+and psd.Amount != psd.FactInAmount -- 未到货
+and PurchaseSummaryID in (?)`

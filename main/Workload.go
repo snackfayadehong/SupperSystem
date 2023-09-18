@@ -23,6 +23,7 @@ func main() {
 		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)
 		router.POST("/getNoAccountEntry", middleware.CheckTime, service.GetNoAccountEntry)
 		router.POST("/getUnCheckBills", middleware.CheckTime, service.GetUnCheckBills)
+		router.POST("/getNoDeliveredPurchaseSummary", middleware.CheckTime, service.GetNoDeliveredPurchaseSummary)
 	}
 	err := r.Run(fmt.Sprintf("%s:%s", clientDb.Configs.Server.IP, clientDb.Configs.Server.Port))
 	if err != nil {

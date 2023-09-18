@@ -29,8 +29,7 @@ myAxios.interceptors.response.use(
     res => {
         if (res.status !== 200) {
             loadingInstance.close();
-            alert(res.statusText);
-            return;
+            return "";
         }
         loadingInstance.close();
         return res.data;

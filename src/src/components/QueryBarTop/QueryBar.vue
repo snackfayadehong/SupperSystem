@@ -7,6 +7,7 @@
             </el-config-provider>
         </div>
         <el-button type="primary" class="qry-btn" @click="query">查询</el-button>
+        <el-button v-if="props.parentName == 'NoDeliveredPurchaseSummary'" type="primary" class="qry-btn" @click="exportExcel">导出</el-button>
     </div>
 </template>
 
@@ -15,7 +16,10 @@ import myAxios from "../../api/myAxios.js";
 import { ref } from "vue";
 import bus from "../../eventBus";
 import dayjs from "dayjs";
+import ExportExcelUtity from "../../utity/exportExcel";
 // import { getCurrentInstance } from "vue";
+// 接口返回信息
+let res = "";
 
 const props = defineProps({
     // 父组件名
@@ -43,7 +47,6 @@ const query = async () => {
     // 获取父组件名称,根据夫组件名称查询不同数据
     // commName = currentCpn.parent.proxy.name;
     // console.log(commName);
-    let res = "";
     let Timevalue = JSON.parse(JSON.stringify(queryDate.value));
     if (props.parentName == "") {
         alert("组件名为空");
@@ -62,16 +65,33 @@ const query = async () => {
         res = await myAxios.post("/getNoAccountEntry", { startTime: Timevalue[0], endTime: Timevalue[1] });
         if (res == "") {
             alert("无数据");
+            return;
         }
         bus.emit("getDepartmenCollarData", res.Data);
-    } else if ((props.parentName = "UnCheckBills")) {
+    } else if (props.parentName == "UnCheckBills") {
         // 未核对数据查询
         res = await myAxios.post("/getUnCheckBills", { startTime: Timevalue[0], endTime: Timevalue[1] });
         if (res == "") {
             alert("无数据");
+            return;
         }
         bus.emit("getUnCheckBills", res.Data);
+    } else if (props.parentName == "NoDeliveredPurchaseSummary") {
+        // 采购订单未到货数据统计
+        res = await myAxios.post("/getNoDeliveredPurchaseSummary", { startTime: Timevalue[0], endTime: Timevalue[1] });
+        if (res == "") {
+            alert("无数据");
+            return;
+        }
+        bus.emit("getNodeliveredPurchaseSummary", res.Data);
     }
+};
+const exportExcel = () => {
+    if (typeof res.Data == "undefined" || res.Data.length == 0) {
+        alert("请先查询信息");
+        reutrn;
+    }
+    ExportExcelUtity(res.Data, "123.xlsx", "NodeliveredPurchase");
 };
 </script>
 <style scoped>
