@@ -1,5 +1,5 @@
 import * as XLSXStyle from "xlsx-js-style";
-import _, { head } from "lodash";
+import _ from "lodash";
 import { purchaseSummaryFileds, purchaseSummaryDetailFileds } from "../model/purchaseSummary";
 
 const ExportExcelUtity = (res, workBookName, type) => {
@@ -10,30 +10,17 @@ const ExportExcelUtity = (res, workBookName, type) => {
 
         for (let supplierName in SupplierNameGroups) {
             let supplierData = SupplierNameGroups[supplierName];
-
-            // 表头
+            let jsonWorksheet = XLSXStyle.utils.book_new();
+            // 添加表头
             const header = {
                 v: supplierName,
                 t: "s",
-                s: {
-                    // font 字体属性
-                    font: {
-                        bold: false,
-                        sz: 18,
-                        name: "宋体"
-                    },
-                    // alignment 对齐方式
-                    alignment: {
-                        vertical: "center", // 垂直居中
-                        horizontal: "center" // 水平居中
-                    }
-                }
+                s: { font: { bold: false, sz: 18, name: "宋体" }, alignment: { vertical: "center", horizontal: "center" } }
             };
 
-            const jsonWorksheet = XLSXStyle.utils.json_to_sheet([{ "": header }]);
-            const merge = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }]; // 合并单元格
+            XLSXStyle.utils.sheet_add_aoa(jsonWorksheet, [[header]]);
+            const merge = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 11 } }];
             jsonWorksheet["!merges"] = merge;
-
             // 遍历主记录和子记录
             supplierData.forEach(item => {
                 // 主记录字段中文

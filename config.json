@@ -1,10 +1,1 @@
-{
-    "Server": { "Ip": "127.0.0.1", "Port": "3007", "RunModel": "debug" },
-    "DBClient": {
-        "ip": "127.0.0.1",
-        "username": "sa",
-        "password": "20010126",
-        "db_name": "WZ_MY",
-        "isEc": 0
-    }
-}
+{"Server":{"Ip":"127.0.0.1","Port":"3007","RunModel":"debug"},"DBClient":{"ip":"127.0.0.1","username":"sa","password":"AktIhCc2fsC7jqwzks1WkO5bP4lLTuPI0WngR0TmMD+M+iQZyg0bejZh6ZL3HI1E/J/pTRgQ+U9QkMLO/wQUZPK8mi95ifLsEgJQOghSgsNgk5PCvExqvNZhg7NKQ7bGymYjIgUo0eyWMLCaOU6L0IkfhKPTMZT2wDbnkxITiaLcbV2NytcHtaupwHl7XjKuWjXCoPfEQ9h40qSyf6HPft8DKwoVPncugtQSKegCcqlR8SNiMtzqFiH+cchYyNcVYEBQ6SS83UrmTjTKw42GkJ5P0bWYYZH4IcWAi8eROwF4WUX49YlBiM/oKn9p8ZcQon2noxi3yDccNcbn3itZ4A==","db_name":"WZ_MY","isEc":1}}
