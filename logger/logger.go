@@ -88,7 +88,7 @@ func getEncoder() zapcore.Encoder {
 	// 显示调用者信息
 	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
 	// 返回json 格式的 日志编辑器
-	return zapcore.NewJSONEncoder(encoderConfig)
+	return zapcore.NewConsoleEncoder(encoderConfig)
 }
 
 // 获取切割的问题，给初始化logger使用的
@@ -105,7 +105,6 @@ func getLogWriter(filename string) zapcore.WriteSyncer {
 func GinLogger(c *gin.Context) {
 	logger := zap.L()
 	start := time.Now()
-	path := c.Request.URL.Path
 	buf := make([]byte, 1024)
 	n, _ := c.Request.Body.Read(buf)
 	// 去除转义字符
@@ -116,16 +115,27 @@ func GinLogger(c *gin.Context) {
 	c.Next()                                            // 执行视图函数
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
-	logger.Info(path,
-		zap.Int("status", c.Writer.Status()),
-		zap.String("method", c.Request.Method),
-		zap.String("path", path),
-		zap.String("query", reqData),
-		zap.String("ip", c.ClientIP()),
-		zap.String("user-agent", c.Request.UserAgent()),
-		zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
-		zap.Duration("cost", cost),
+	sugar := logger.Sugar()
+	sugar.Infoln("接口请求:",
+		"Status", c.Writer.Status(),
+		"method", c.Request.Method,
+		"url", c.Request.URL.Path,
+		"request", reqData,
+		"ip", c.ClientIP(),
+		"user-agent", c.Request.UserAgent(),
+		"err", c.Errors.ByType(gin.ErrorTypePrivate).String(),
+		"cost", cost,
 	)
+	// logger.Info("\n接口请求日志",
+	// 	zap.Int("status", c.Writer.Status()),
+	// 	zap.String("method", c.Request.Method),
+	// 	zap.String("path", "path"),
+	// 	zap.String("query", reqData),
+	// 	zap.String("ip", c.ClientIP()),
+	// 	zap.String("user-agent", c.Request.UserAgent()),
+	// 	zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
+	// 	zap.Duration("cost", cost),
+	// )
 }
 
 // GinRecovery 用于替换gin框架的Recovery中间件，因为传入参数，再包一层
