@@ -16,7 +16,8 @@ import (
 	"time"
 )
 
-const level = zapcore.InfoLevel
+const InfoLevel = zapcore.InfoLevel
+const ErrorLevel = zapcore.ErrorLevel
 
 // InitLog 日志
 func InitLog() (err error) {
@@ -25,54 +26,35 @@ func InitLog() (err error) {
 		err = os.Mkdir("logs", 0700)
 	}
 	// 创建Core三大件，进行初始化
-	writeSyncer := getLogWriter("logs/")
 	encoder := getEncoder()
+	// 判断日志级别
+	highPriority := zap.LevelEnablerFunc(func(lev zapcore.Level) bool { // error级别
+		return lev >= zap.ErrorLevel
+	})
+	lowPriority := zap.LevelEnablerFunc(func(lev zapcore.Level) bool { // info和debug级别,debug级别是最低的
+		return lev < zap.ErrorLevel && lev >= zap.DebugLevel
+	})
+	infoSyncer := getLogWriter("logs/", InfoLevel)
+	errorSyncer := getLogWriter("logs/", ErrorLevel)
 	// 创建核心-->如果是debug模式，就在控制台和文件都打印，否则就只写到文件中
 	var core zapcore.Core
 	if clientDb.Configs.Server.RunModel == "debug" {
 		// 开发模式，日志输出到终端
-		consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 		// NewTee创建一个核心，将日志条目复制到两个或多个底层核心中。
 		core = zapcore.NewTee(
-			zapcore.NewCore(encoder, writeSyncer, level),
-			zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), level),
+			zapcore.NewCore(encoder, zapcore.Lock(os.Stdout), InfoLevel),
 		)
 	} else {
-		core = zapcore.NewCore(encoder, writeSyncer, level)
+		coreInfo := zapcore.NewCore(encoder, infoSyncer, lowPriority)
+		coreErr := zapcore.NewCore(encoder, errorSyncer, highPriority)
+		core = zapcore.NewTee(coreInfo, coreErr)
 	}
-
-	// core := zapcore.NewCore(encoder, writeSyncer, level)
 	// 创建 logger 对象
 	// Warn()/Error()等级别的日志会输出堆栈，Debug()/Info()这些级别不会
 	log := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zap.WarnLevel))
 	// 替换全局的 logger, 后续在其他包中只需使用zap.L()调用即可
 	zap.ReplaceGlobals(log)
 	return
-	// logTime := time.Now().Format("2006-01-02")
-	// _, err = os.Stat(fmt.Sprintf("logs/%s.log", logTime))
-	// if os.IsNotExist(err) {
-	// 	logFile, err = os.OpenFile(fmt.Sprintf("logs/%s.log", logTime), os.O_RDWR|os.O_APPEND|os.O_CREATE, 0666)
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// }
-	// // gin日志配置
-	// logConfig = &gin.LoggerConfig{
-	// 	Formatter: func(params gin.LogFormatterParams) string {
-	// 		return fmt.Sprintf("客户端IP:%s,请求时间:[%s],请求方式:%s,请求地址:%s,http协议版本:%s,请求状态码:%d,响应时间:%s,客户端:%s,错误信息:%s\r\n",
-	// 			params.ClientIP,
-	// 			params.TimeStamp.Format("2006-01-02 15:04:05"),
-	// 			params.Method,
-	// 			params.Path,
-	// 			params.Request.Proto,
-	// 			params.StatusCode,
-	// 			params.Latency,
-	// 			params.Request.UserAgent(),
-	// 			params.ErrorMessage,
-	// 		)
-	// 	},
-	// 	Output: logFile,
-	// }
 }
 
 // 获取Encoder，给初始化logger使用的
@@ -80,7 +62,7 @@ func getEncoder() zapcore.Encoder {
 	// 使用zap提供的 NewProductionEncoderConfig
 	encoderConfig := zap.NewProductionEncoderConfig()
 	// 设置时间格式
-	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
+	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
 	// 时间的key
 	encoderConfig.TimeKey = "time"
 	// 级别
@@ -92,9 +74,18 @@ func getEncoder() zapcore.Encoder {
 }
 
 // 获取切割的问题，给初始化logger使用的
-func getLogWriter(filename string) zapcore.WriteSyncer {
+func getLogWriter(filename string, leavel zapcore.Level) zapcore.WriteSyncer {
+	var logFileName string
+	switch leavel {
+	case zapcore.ErrorLevel:
+		logFileName = filename + "ERROR_%Y%m%d.log"
+	case zapcore.InfoLevel:
+		logFileName = filename + "%Y%m%d.log"
+	default:
+		logFileName = filename + "Other_%Y%m%d.log"
+	}
 	hook, _ := rotatelogs.New(
-		filename+"%Y%m%d"+".log",
+		logFileName,
 		rotatelogs.WithLinkName(filename),
 		rotatelogs.WithMaxAge(time.Hour*24*30),
 		rotatelogs.WithRotationTime(time.Hour*24))
@@ -116,25 +107,17 @@ func GinLogger(c *gin.Context) {
 	// 视图函数执行完成，统计时间，记录日志
 	cost := time.Since(start)
 	sugar := logger.Sugar()
-	sugar.Infoln("接口请求:",
-		"Status", c.Writer.Status(),
-		"method", c.Request.Method,
-		"url", c.Request.URL.Path,
-		"request", reqData,
-		"ip", c.ClientIP(),
-		"user-agent", c.Request.UserAgent(),
-		"err", c.Errors.ByType(gin.ErrorTypePrivate).String(),
-		"cost", cost,
-	)
-	// logger.Info("\n接口请求日志",
-	// 	zap.Int("status", c.Writer.Status()),
-	// 	zap.String("method", c.Request.Method),
-	// 	zap.String("path", "path"),
-	// 	zap.String("query", reqData),
-	// 	zap.String("ip", c.ClientIP()),
-	// 	zap.String("user-agent", c.Request.UserAgent()),
-	// 	zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()),
-	// 	zap.Duration("cost", cost),
+	sugar.Infof("\r事件:接口调用\rIP：%s\rURL：%s\rMethod：%s\r入参：%s\rError：%s\rCost：%s\r----------------------------------------------------------------------------", c.ClientIP(),
+		c.Request.URL.Path, c.Request.Method, reqData, c.Errors.ByType(gin.ErrorTypePrivate).String(), cost)
+	// sugar.Info(
+	// 	"Status", c.Writer.Status(),
+	// 	"method", c.Request.Method,
+	// 	"url", c.Request.URL.Path,
+	// 	"request", reqData,
+	// 	"ip", c.ClientIP(),
+	// 	"user-agent", c.Request.UserAgent(),
+	// 	"err", c.Errors.ByType(gin.ErrorTypePrivate).String(),
+	// 	"cost", cost,
 	// )
 }
 
