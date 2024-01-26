@@ -8,45 +8,34 @@ import (
 	"net/http"
 )
 
+type Response struct {
+	Code    int
+	Message string
+}
+
+var res Response
+
 func ChangeProductInfoService(c *gin.Context) {
-	// 返回信息
-	var code int
-	var msg string
 	// 查询条件
-	var where string
+	var where []string
 	// 入参
-	var rep []controller.ChangeInfoElement
-	err := c.ShouldBindBodyWith(&rep, binding.JSON)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(&rep)
+	var req controller.RequestInfo
+	_ = c.ShouldBindBodyWith(&req.C, binding.JSON)
 	// 将入参多条数据Code整合为一个where条件
 	var seen = make(map[string]bool)
-	for _, v := range rep {
+	for _, v := range req.C {
 		if !seen[v.Code] {
 			seen[v.Code] = true
-			where += fmt.Sprintf("'%s',", v.Code)
+			where = append(where, v.Code)
 		} else {
-			code = 1
-			msg += fmt.Sprintf("%s入参存在多条;", v.Code)
+			res.Code = 1
+			res.Message = fmt.Sprintf("%s入参存在多条;", v.Code)
+			c.JSON(http.StatusCreated, res)
+			return
 		}
 	}
-	if code == 1 {
-		c.JSON(http.StatusOK, gin.H{
-			"Code":    code,
-			"Message": msg,
-			"err":     err,
-		})
-		return
-	} else {
-		c.JSON(201, gin.H{
-			"Code":    code,
-			"Message": msg,
-			"err":     err,
-		})
-	}
-	fmt.Println("123")
-	// // 删除最后一个 ','
-	// where = where[:len(where)-1]
+	// 获取怡道系统产品基本信息
+	_, msg := req.GetProductInfo(where)
+	res.Message = msg
+	c.JSON(http.StatusCreated, res)
 }

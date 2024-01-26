@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"net/http"
@@ -34,4 +35,18 @@ func CheckTime(c *gin.Context) {
 			c.Abort()
 		}
 	}
+}
+
+// 获取 body 方法1
+
+type ResponseWriter struct {
+	gin.ResponseWriter
+	B *bytes.Buffer
+}
+
+func (w ResponseWriter) Write(b []byte) (int, error) {
+	// 向一个bytes.buffer中写一份数据来为获取body使用
+	w.B.Write(b)
+	// 完成gin.Context.Writer.Write()原有功能
+	return w.ResponseWriter.Write(b)
 }

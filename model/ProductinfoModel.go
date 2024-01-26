@@ -9,6 +9,7 @@ type ProductInfo struct {
 	HisProductCode7Source string `gorm:"column:HisProductCode7Source"` // 集采平台产品临时ID 审核过后会改变HisProductCode7值
 	HisProductCode7Status string `gorm:"column:HisProductCode7Status"` // 集采平台产品ID状态
 	CusCategoryCode       string `gorm:"column:CusCategoryCode"`       // 104分类编码
+	ParentCusCategoryCode string `gorm:"column:ParentCusCategoryCode"` // 104分类编码(第3级)
 	TenderCode            string `gorm:"column:TenderCode"`            // 交易编码
 	MedicareCode          string `gorm:"column:MedicareCode"`          // 医保编码
 	SysCode               string `gorm:"column:SysCode"`               // 集采系统编码
@@ -18,5 +19,8 @@ type ProductInfo struct {
 }
 
 type GetProduct interface {
-	GetProductInfo(Code string) (*[]ProductInfo, string)
+	GetProductInfo(Where []string) (*[]ProductInfo, string)
+}
+type ChangeProduct interface {
+	ChangeProductInfo(*[]ProductInfo)
 }
