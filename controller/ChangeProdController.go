@@ -5,6 +5,7 @@ import (
 	"WorkloadQuery/model"
 	"fmt"
 	"gorm.io/gorm"
+	"time"
 )
 
 /*
@@ -35,7 +36,7 @@ const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? wher
 ChangeProductInfo
 更改产品基本信息
 */
-func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo) error {
+func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo, ip string) error {
 	// 开启事务
 	tx := clientDb.DB.Begin()
 	defer func() {
@@ -52,36 +53,46 @@ func (i *RequestInfo) ChangeProductInfo(prod *[]model.ProductInfo) error {
 	// 在入参中找到Code相同的
 	for _, item := range i.C {
 		if pIndex, ok := pMap[item.Code]; ok {
+			var updateMsg string
 			// 修改字典信息的业务逻辑
 			// 1. 104分类；
-			err := UpdateCategoryCode(tx, &item, (*prod)[pIndex])
+			err := UpdateCategoryCode(tx, &item, (*prod)[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 2. 更新院内产品名称、规格信息
-			err = UpdateHospitalInfo(tx, &item, (*prod)[pIndex])
+			err = UpdateHospitalInfo(tx, &item, (*prod)[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 3. 判断集采审核状态并更新集采信息
-			err = UpdateYgcgidInfo(tx, &item, (*prod)[pIndex])
+			err = UpdateYgcgidInfo(tx, &item, (*prod)[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 4. 更新TradeCode流水号
-			err = UpdateTradeCodeInfo(tx, &item, (*prod)[pIndex])
+			err = UpdateTradeCodeInfo(tx, &item, (*prod)[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 5. 更新医保代码
-			err = UpdateMedicareCodeInfo(tx, &item, (*prod)[pIndex])
+			err = UpdateMedicareCodeInfo(tx, &item, (*prod)[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
 			// 6. 写入系统编码系统编号
-			err = UpdateJCSysInfo(tx, &item, (*prod)[pIndex])
+			err = UpdateJCSysInfo(tx, &item, (*prod)[pIndex], &updateMsg)
 			if err != nil {
 				return err
+			}
+			// 写入日志表
+			if updateMsg != "" {
+				db := tx.Exec("Insert Into TB_PoductInfoChangeLog(Prod_Id,Context,IP,UpdateTime) values(?,?,?,?)",
+					(*prod)[pIndex].ProductInfoID, updateMsg, ip, time.Now())
+				if db.Error != nil {
+					tx.Rollback()
+					return db.Error
+				}
 			}
 		}
 	}
@@ -120,93 +131,106 @@ func (i *RequestInfo) GetProductInfo(Where []string) (*[]model.ProductInfo, erro
 	for key := range repeatMap {
 		msg += fmt.Sprintf("%s有重复字典记录或供货关系异常;", key)
 	}
+	if msg == "" {
+		return &NoRepeatProd, nil
+	}
 	return &NoRepeatProd, fmt.Errorf(msg)
 }
 
 // UpdateCategoryCode 更新104分类
-func UpdateCategoryCode(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+func UpdateCategoryCode(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	// 入参中104分类为第3级,物资系统为第4级,查询物资系统第4级代码对应的第3级与入参是否相同
 	// 如果不相同则修改物资为第3级,相同则不更新
-	if *item.CategoryCode != "" && *item.CategoryCode != prod.ParentCusCategoryCode {
+	if *item.CategoryCode != prod.ParentCusCategoryCode {
 		// 修改为第3级
 		db := tx.Exec(UpdateCateCodeSql, item.CategoryCode, prod.ProductInfoID)
 		if db.Error != nil {
+			tx.Rollback()
 			return db.Error
 		}
+		*context = fmt.Sprintf("产品id:%v,CategoryCode(%s)变更为(%s);", prod.ProductInfoID, prod.CusCategoryCode, *item.CategoryCode)
 	}
 	return nil
 }
 
 // UpdateHospitalInfo 更新院内名称、院内规格
-func UpdateHospitalInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
-	if *item.HospitalSpec != "" {
+func UpdateHospitalInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
+	if *item.HospitalSpec != "" && *item.HospitalSpec != prod.HospitalSpec {
 		db := tx.Exec(UpdateHospitalSpecSql, item.HospitalSpec, prod.ProductInfoID)
 		if db.Error != nil {
 			tx.Rollback()
 			return db.Error
 		}
+
 	}
-	if *item.HospitalName != "" {
+	if *item.HospitalName != "" && *item.HospitalName != prod.HospitalName {
 		db := tx.Exec(UpdateHospitalNameSql, item.HospitalName, prod.ProductInfoID)
 		if db.Error != nil {
 			tx.Rollback()
 			return db.Error
 		}
+		*context += fmt.Sprintf("HospitalSpec:院内规格(%s)变更为(%s);HospitalName:院内名称(%s)变更为(%s);", prod.HospitalSpec, *item.HospitalSpec,
+			prod.HospitalName, *item.HospitalName)
 	}
 	return nil
 }
 
 // UpdateYgcgidInfo 更新网采平台产品ID
-func UpdateYgcgidInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+func UpdateYgcgidInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	// 1 已审核  null '' 0 为未审核
 	if *item.YGCGID != "" {
-		if prod.HisProductCode7Status == 1 {
+		if prod.HisProductCode7Status == 1 && *item.YGCGID != prod.YGCGID {
 			db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ? where ProductInfoID= ?", item.YGCGID,
 				prod.ProductInfoID)
 			if db.Error != nil {
 				tx.Rollback()
 				return db.Error
 			}
-		} else {
+			*context += fmt.Sprintf("集采产品ID:HisProductCode7(%s)变更为(%s);", prod.YGCGID, *item.YGCGID)
+		} else if *item.YGCGID != prod.HisProductCode7Source {
 			db := tx.Exec("Update TB_ProductInfo Set HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID,
 				prod.ProductInfoID)
 			if db.Error != nil {
 				tx.Rollback()
 				return db.Error
 			}
+			*context += fmt.Sprintf("集采产品ID:HisProductCode7Source(%s)变更为(%s);", prod.HisProductCode7Source, *item.YGCGID)
 		}
+
 	}
 	return nil
 }
 
 // UpdateTradeCodeInfo 更新流水号
-func UpdateTradeCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
-	if *item.TradeCode != "" {
+func UpdateTradeCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
+	if *item.TradeCode != "" && *item.TradeCode != prod.TradeCode {
 		db := tx.Exec("Update TB_TenderCode Set TenderCode =?,UpdateTime = GETDATE() where ProductInfoID = ?",
 			item.TradeCode, prod.ProductInfoID)
 		if db.Error != nil {
 			tx.Rollback()
 			return db.Error
 		}
+		*context += fmt.Sprintf("TradeCode流水号(%s)变更为%s;", prod.TradeCode, *item.TradeCode)
 	}
 	return nil
 }
 
 // UpdateMedicareCodeInfo 更新医保代码
-func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
-	if *item.MedicareCode != "" {
+func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
+	if *item.MedicareCode != "" && *item.MedicareCode != prod.MedicareCode {
 		db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ?",
 			item.MedicareCode, prod.ProductInfoID)
 		if db.Error != nil {
 			tx.Rollback()
 			return db.Error
 		}
+		*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", prod.MedicareCode, *item.MedicareCode)
 	}
 	return nil
 }
 
 // UpdateJCSysInfo 更新集采系统信息
-func UpdateJCSysInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo) error {
+func UpdateJCSysInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	if prod.SysCode == "" && prod.SysId == "" { // 如果同时为空则代表无记录
 		if *item.SysID != "" || *item.SysCode != "" {
 			db := tx.Exec("Insert Into TB_ProductInfoJCSysCode(Prod_Id, SysId, SysCode, IsVoid, CreateTime) values (?,?,?,?,getdate())",
@@ -215,23 +239,26 @@ func UpdateJCSysInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInf
 				tx.Rollback()
 				return db.Error
 			}
+			*context += fmt.Sprintf("插入集采系统信息:Sysid(%s),SysCode(%s)", *item.SysID, *item.SysCode)
 		}
 	} else {
-		if *item.SysID != "" {
+		if *item.SysID != "" && *item.SysID != prod.SysId {
 			db := tx.Exec("Update TB_ProductInfoJCSysCode set SysId = ? where Prod_Id =?", item.SysID,
 				prod.ProductInfoID)
 			if db.Error != nil {
 				tx.Rollback()
 				return db.Error
 			}
+			*context += fmt.Sprintf("更新集采系统信息:SysId(%s)变更为(%s);", prod.SysId, *item.SysID)
 		}
-		if *item.SysCode != "" {
+		if *item.SysCode != "" && *item.SysCode != prod.SysCode {
 			db := tx.Exec("Update TB_ProductInfoJCSysCode set SysCode = ? where Prod_Id =?", item.SysCode,
 				prod.ProductInfoID)
 			if db.Error != nil {
 				tx.Rollback()
 				return db.Error
 			}
+			*context += fmt.Sprintf("更新集采系统信息:SysCode(%s)变更为(%s)", prod.SysCode, *item.SysCode)
 		}
 	}
 	return nil
