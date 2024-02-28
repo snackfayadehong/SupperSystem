@@ -11,7 +11,7 @@ type ProductInfo struct {
 	HisProductCode7Status int    `gorm:"column:HisProductCode7Status"` // 集采平台产品ID状态
 	CusCategoryCode       string `gorm:"column:CusCategoryCode"`       // 104分类编码
 	ParentCusCategoryCode string `gorm:"column:ParentCusCategoryCode"` // 104分类编码(第3级)
-	TenderCode            string `gorm:"column:TenderCode"`            // 交易编码
+	TradeCode             string `gorm:"column:TradeCode"`             // 交易编码
 	MedicareCode          string `gorm:"column:MedicareCode"`          // 医保编码
 	SysCode               string `gorm:"column:SysCode"`               // 集采系统编码
 	SysId                 string `gorm:"column:SysId"`                 // 集采系统编号
