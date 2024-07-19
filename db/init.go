@@ -57,9 +57,13 @@ type MyWriter struct {
 }
 
 func (m *MyWriter) Printf(format string, v ...interface{}) {
-	if len(v) <= 3 { // 执行sql语句len(v)>3
-		return
-	}
+	//if len(v) <= 3 { // 执行sql语句len(v)>3
+	//	return
+	//}
+	fmt.Println(format)
+	//for i, v1 := range v {
+	//	fmt.Printf("i:%d,v1:%v\n", i, v1)
+	//}
 	logstr := fmt.Sprintf("\r\n事件：SQL执行\r\n调用：%s\r\n时间：%.3fms\r\n行数：%v\r\nSQL：%s", v...)
 	m.mlog.Infof("%s\r\n%s\r\n", logstr, logger2.LoggerEndStr)
 }

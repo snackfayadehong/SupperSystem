@@ -21,7 +21,13 @@ const QueryProd = `SELECT
 	ELSE SUBSTRING ( prod.CusCategoryCode, 1, ( CONVERT ( INT, cus.SubjectGrade ) - 1 ) * 2 ) + '0000'
 	END ParentCusCategoryCode
 	,td.TenderCode AS TradeCode -- 交易编码
-	,yb.MedicareCode -- 医保编码
+    --,case 
+    --when yb.MedicareCode = '' then yb.ChargeRuleID
+    --when gjyb.MedicareCode = '' then gjyb.ChargeRuleID
+    --else ''
+       -- end	as MedicareID 
+	--,yb.MedicareCode -- 医保编码
+	--,gjyb.MedicareCode as CountryMedicareCode -- 国家医保
     ,prod.ChargePrice -- 收费价格
 	,jc.SysCode -- 集采系统编码
 	,jc.SysId -- 集采系统编号
@@ -32,10 +38,14 @@ FROM
 	LEFT JOIN TB_TenderCode td  WITH (nolock) ON td.ProductInfoID = prod.ProductInfoID 
 	AND td.IsVoid = 0 
 	AND td.MedicareType = 1
+	-- 医保编码
 	LEFT JOIN TB_ProductChargeRule yb WITH (nolock) ON yb.ProductInfoID = prod.ProductInfoID 
-	AND td.IsVoid = 0 
-	AND yb.MedicareType = 1
-	AND yb.MedicareCodeStatus = 0
+	AND yb.IsVoid = 0 
+	and yb.MedicareType = 1 
+	-- 国家医保编码
+	LEFT JOIN TB_ProductChargeRule gjyb WITH (nolock) on yb.ProductInfoID = prod.ProductInfoID
+	and  yb.IsVoid = 0
+	and yb.MedicareType = 3
 	LEFT JOIN TB_EnterpriseProduct ep  WITH (nolock) ON ep.ProductID = prod.ProductInfoID 
 	AND prod.DefaultSupplierID = ep.EnterpriseID
 	LEFT JOIN TB_ProductInfoJCSysCode jc WITH (nolock) ON jc.Prod_Id = prod.ProductInfoID 

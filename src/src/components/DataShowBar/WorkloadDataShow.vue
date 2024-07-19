@@ -40,26 +40,6 @@ bus.on("getWorkloadData", res => {
         alert("无数据");
         return;
     }
-    var actotal = 0.0;
-    var dptotal = 0.0;
-    var reftotal = 0.0;
-    for (let index = 0; index < res.length; index++) {
-        res[index].total_bill_amount = res[index].prodAcBill + res[index].prodDpBill + res[index].refBill;
-        res[index].total_spec_amount = res[index].prodAcSpec + res[index].prodDpSpec + res[index].refSpec;
-        actotal = parseFloat(res[index].prodAcTotal);
-        dptotal = parseFloat(res[index].prodDpTotal);
-        reftotal = parseFloat(res[index].refTotal);
-        if (isNaN(actotal)) {
-            actotal = 0.0;
-        }
-        if (isNaN(dptotal)) {
-            dptotal = 0.0;
-        }
-        if (isNaN(reftotal)) {
-            reftotal = 0.0;
-        }
-        res[index].total_total_amount = actotal + dptotal + reftotal;
-    }
     dataList.value = res;
 });
 </script>

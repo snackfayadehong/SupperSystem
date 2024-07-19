@@ -10,9 +10,9 @@ import (
 func GetWorkload(c *gin.Context) {
 	workloadTimeInterval := controller.QueryWorkloadTime{}
 	_ = c.ShouldBindBodyWith(&workloadTimeInterval, binding.JSON)
-	workloadTimeInterval.StartTime += " 00:00:00.000"
-	workloadTimeInterval.EndTime += " 23:59:59.000"
-	workloads := workloadTimeInterval.UserWorkloadQuery()
+	//workloadTimeInterval.StartTime += " 00:00:00.000"
+	//workloadTimeInterval.EndTime += " 23:59:59.000"
+	workloads := workloadTimeInterval.UserWorkloadQuery_New()
 	if workloads == nil || len(*workloads) == 0 {
 		c.JSON(http.StatusNoContent, gin.H{
 			"msg":  "无数据",

@@ -37,6 +37,14 @@ type ExceptionProd struct {
 	HasError bool
 }
 
+// ProdMedicareCode 医保代码
+type ProdMedicareCode struct {
+	ProductInfoID    int    `gorm:"column:ProductInfoID"`
+	ChargeRuleID     int    `gorm:"column:ChargeRuleID"`
+	MedicareCode     string `gorm:"column:MedicareCode"`
+	MedicareCodeTemp string `gorm:"column:MedicareCode"`
+}
+
 const UpdateCateCodeSql = "Update TB_ProductInfo Set CusCategoryCode = ? where ProductInfoID = ?"
 const UpdateHospitalSpecSql = "Update TB_ProductInfo set HospitalSpec = ? where ProductInfoID = ?"
 const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? where ProductInfoID = ?"
@@ -85,7 +93,7 @@ func (i *RequestInfo) ChangeProductInfo(prod []model.ProductInfo, ip string) err
 				return err
 			}
 			// 5. 更新医保代码
-			err = UpdateMedicareCodeInfo(tx, &item, prod[pIndex], &updateMsg)
+			err = UpdateMedicareCodeInfo2(tx, &item, prod[pIndex], &updateMsg)
 			if err != nil {
 				return err
 			}
@@ -248,21 +256,14 @@ func UpdateTradeCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.Produc
 	return nil
 }
 
-// UpdateMedicareCodeInfo 更新医保代码
-func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
+// UpdateMedicareCodeInfo2 更新医保代码2.0
+func UpdateMedicareCodeInfo2(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	if *item.MedicareCode != "" {
-		// prod.MedicareCode不为空,且不以item.MedicareCode开头的则修改
-		if prod.MedicareCode != "" && !strings.HasPrefix(prod.MedicareCode, *item.MedicareCode) {
-			db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ? and MedicareType = 1 and  MedicareCodeStatus = 0 and IsVoid = 0",
-				item.MedicareCode, prod.ProductInfoID)
-			if db.Error != nil {
-				tx.Rollback()
-				return db.Error
-			}
-			*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", prod.MedicareCode, *item.MedicareCode)
-		}
-		// 插入医保代码
-		if prod.MedicareCode == "" {
+		// 查询数据库
+		var M []ProdMedicareCode
+		clientDb.DB.Raw("select ChargeRuleID,ProductInfoID,MedicareCode,MedicareCodeTemp from TB_ProductChargeRule where IsVoid = 0 and ProductInfoID = ?", prod.ProductInfoID).Find(&M)
+		// 无记录
+		if len(M) == 0 {
 			db := tx.Exec("Insert into TB_ProductChargeRule(productinfoid, pricecharged, medicarecode, medinsname, medicaretype, repayflag, repayratio, addfeeflag, addratiofee, isvoid, medicarecodestatus) values (?,?,?,?,?,?,?,?,?,?,?)",
 				prod.ProductInfoID, prod.ChargePrice, *item.MedicareCode, "城镇医保", 1, 0, 0, 0, 0, 0, 1)
 			if db.Error != nil {
@@ -270,10 +271,63 @@ func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.Pro
 				return db.Error
 			}
 			*context += fmt.Sprintf("产品ID(%v)插入医保代码(%s)", prod.ProductInfoID, *item.MedicareCode)
+			return nil
+		}
+		for _, v := range M {
+			// 医保代码不为空
+			if v.MedicareCode != "" && !strings.HasPrefix(v.MedicareCode, *item.MedicareCode) {
+				db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ChargeRuleID = ?", *item.MedicareCode, v.ChargeRuleID)
+				if db.Error != nil {
+					tx.Rollback()
+					return db.Error
+				}
+				*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", v.MedicareCode, *item.MedicareCode)
+			}
+			// 临时医保代码不为空
+			if v.MedicareCodeTemp != "" && !strings.HasPrefix(v.MedicareCodeTemp, *item.MedicareCode) {
+				db := tx.Exec("Update TB_ProductChargeRule Set MedicareCodeTemp = ? where ChargeRuleID = ?", *item.MedicareCode, v.ChargeRuleID)
+				if db.Error != nil {
+					tx.Rollback()
+					return db.Error
+				}
+				*context += fmt.Sprintf("MedicareCodeTemp:未审核医保代码(%s)变更为(%s);", v.MedicareCodeTemp, *item.MedicareCode)
+			}
 		}
 	}
 	return nil
 }
+
+// 因为医保代码表关系复杂,此方法是根据查询所有产品信息来修改,医保代码可能出现多条等，故弃用此方法,改为2.0,需要时在单独查询数据库
+//// UpdateMedicareCodeInfo 更新医保代码1.0
+//func UpdateMedicareCodeInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {
+//	if *item.MedicareCode != "" {
+//		// 如果医保代码和国家医保代码都为空则插入医保代码
+//		if prod.MedicareCode == "" && prod.CountryMedicareCode == "" {
+//			db := tx.Exec("Insert into TB_ProductChargeRule(productinfoid, pricecharged, medicarecode, medinsname, medicaretype, repayflag, repayratio, addfeeflag, addratiofee, isvoid, medicarecodestatus) values (?,?,?,?,?,?,?,?,?,?,?)",
+//				prod.ProductInfoID, prod.ChargePrice, *item.MedicareCode, "城镇医保", 1, 0, 0, 0, 0, 0, 1)
+//			if db.Error != nil {
+//				tx.Rollback()
+//				return db.Error
+//			}
+//			*context += fmt.Sprintf("产品ID(%v)插入医保代码(%s)", prod.ProductInfoID, *item.MedicareCode)
+//		} else {
+//			// prod.MedicareCode不为空,且不以item.MedicareCode开头的则修改
+//			if prod.MedicareCode != "" && !strings.HasPrefix(prod.MedicareCode, *item.MedicareCode) {
+//				db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ? and MedicareType = 1 ",
+//					item.MedicareCode, prod.ProductInfoID)
+//				if db.Error != nil {
+//					tx.Rollback()
+//					return db.Error
+//				}
+//				*context += fmt.Sprintf("MedicareCode:医保代码(%s)变更为(%s);", prod.MedicareCode, *item.MedicareCode)
+//			}
+//			if prod.CountryMedicareCode != "" && !strings.HasPrefix(prod.CountryMedicareCode, *item.MedicareCode) {
+//				db := tx.Exec("Update TB_ProductChargeRule Set MedicareCode = ? where ProductInfoID = ? ")
+//			}
+//		}
+//	}
+//	return nil
+//}
 
 // UpdateJCSysInfo 更新集采系统信息
 func UpdateJCSysInfo(tx *gorm.DB, item *ChangeInfoElement, prod model.ProductInfo, context *string) error {

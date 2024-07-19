@@ -13,7 +13,6 @@ type ProductInfo struct {
 	ParentCusCategoryCode string `gorm:"column:ParentCusCategoryCode"` // 104分类编码(第3级)
 	TradeCode             string `gorm:"column:TradeCode"`             // 交易编码
 	ChargePrice           string `gorm:"column:ChargePrice"`           // 收费价格
-	MedicareCode          string `gorm:"column:MedicareCode"`          // 医保编码
 	SysCode               string `gorm:"column:SysCode"`               // 集采系统编码
 	SysId                 string `gorm:"column:SysId"`                 // 集采系统编号
 	IsVoid                int    `gorm:"column:IsVoid"`                // 0：启用 1：停用
