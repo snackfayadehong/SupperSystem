@@ -77,7 +77,9 @@ CONVERT(VARCHAR(20),cate.Remark) AS yplb,
 a.HisProductStoreCode AS kfdm,  
 a.TopLimit AS kfgx,  
 a.DownLimit AS kfdx, 
-Cr.MedicareCode ypbwm,
+case when isnull(Cr.MedicareCode,'') = '' then Cr.MedicareCodeTemp
+else Cr.MedicareCode
+end as ypbwm,
 CASE  
 WHEN charindex( '无注册证', isnull( lmr.RegistNum, '' ) ) > 0 THEN  'false'   
 WHEN charindex( '进', isnull( lmr.RegistNum, '' ) ) > 0 THEN  'true'   -- 进口  

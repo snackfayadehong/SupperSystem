@@ -39,6 +39,11 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	if p.HospitalName != "" {
 		his.Ypmc = p.HospitalName
 	}
+	if p.OpenTender == "1" {
+		his.Jcsfzb = "1"
+	} else if p.OpenTender == "0" {
+		his.Jcsfzb = "0"
+	}
 	his.Kfbz = p.EighteenProdType // 18类重点监控耗材序号
 	his.Xgczy = p.HRCode          // 修改人员工号
 	//val := reflect.ValueOf(&his)
@@ -452,7 +457,7 @@ func UpdateProductSupplyStatus(tx *gorm.DB, prod model.ProductInfo, context *str
 		return nil
 	}
 	// 修改白名单
-	var sql2 = `update TB_DepartmentApply set IsVoid = 1,UpdateTime = getdate() where ProductInfoID = ?`
+	var sql2 = `update TB_DepartmentApply set IsVoid = 1,UpdateTime = getdate() where ProductInfoID = ? and IsVoid = 0`
 	db := clientDb.DB.Exec(sql2, prod.ProductInfoID)
 	if db.Error != nil {
 		tx.Rollback()
