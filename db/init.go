@@ -7,6 +7,7 @@ import (
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"time"
 )
 
 // 新思路实现以下接口 通过.m.mlog.Infof(format, logstr, logger2.LoggerEndStr)打印日志 详见logger.gormLogger
@@ -42,6 +43,11 @@ func Init() error {
 			NoLowerCase:   true,
 		},
 	})
+	sqlDb, err := DB.DB()
+	sqlDb.SetMaxOpenConns(20)
+	sqlDb.SetMaxIdleConns(10)
+	sqlDb.SetConnMaxLifetime(10 * time.Minute)
+	sqlDb.SetConnMaxIdleTime(time.Hour)
 	//// 根据配置文件设置选择程序环境
 	//switch conf.Configs.Server.RunModel {
 	//case "debug":
