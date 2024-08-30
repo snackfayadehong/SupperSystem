@@ -7,7 +7,5 @@
         "db_name": "WZ_MY",
         "isEc": 0
     },
-    "IPWhite": {
-        "IPWhiteList": ["127.0.0.1"]
-    }
+    "IPWhite": { "IPWhiteList": ["127.0.0.1"] }
 }

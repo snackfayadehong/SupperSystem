@@ -34,5 +34,5 @@ type PurchaseSummaryDetail struct {
 
 type AllPurchaseSummary struct {
 	PurchaseSummary
-	Children *[]PurchaseSummaryDetail `gorm:"_" json:"children"`
+	Children *[]PurchaseSummaryDetail `gorm:"-" json:"children"`
 }

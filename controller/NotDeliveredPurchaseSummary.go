@@ -20,7 +20,10 @@ func (pr *PurchaseSummaryTimeInterval) NotDeliveredPurchaseSummary() (purchaseSu
 // NoDeliveredPurchaseSummary 根据未到货信息找到 未到货订单明细数据
 func NoDeliveredPurchaseSummary(startTime *string, endTime *string) (purchaseSummaryHasChildren []model.AllPurchaseSummary) {
 	var id []string // purchaseSummaryId 订单ID 用于查找明细
-	clientDb.DB.Raw(clientDb.NotDeliveredPurchaseSummarySql, *startTime, *endTime).Scan(&purchaseSummaryHasChildren)
+	db := clientDb.DB.Raw(clientDb.NotDeliveredPurchaseSummarySql, *startTime, *endTime).Scan(&purchaseSummaryHasChildren)
+	if db.Error != nil {
+		return nil
+	}
 	if len(purchaseSummaryHasChildren) < 1 {
 		return nil
 	}
