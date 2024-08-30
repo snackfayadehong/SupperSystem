@@ -16,8 +16,8 @@ func GetNoDeliveredPurchaseSummary(c *gin.Context) {
 	TimeInterval.EndTime += " 23:59:59.000"
 	//
 	purchase := TimeInterval.NotDeliveredPurchaseSummary()
-	if purchase == nil || len(*purchase) == 0 {
-		c.JSON(http.StatusNoContent, gin.H{
+	if purchase == nil || len(purchase) == 0 {
+		c.JSON(http.StatusOK, gin.H{
 			"msg":  "无数据",
 			"Data": "",
 		})
