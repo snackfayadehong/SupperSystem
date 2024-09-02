@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"io"
 	"net"
+	"net/http"
 	"net/http/httputil"
 	"os"
 	"runtime/debug"
@@ -111,11 +112,17 @@ func GinLogger(c *gin.Context) {
 	// c.Request.Body = io.NopCloser(bytes.NewBuffer(buf)) // 将读取后的字节流重新放入body 避免后续程序取不到body参数
 	// 方法2
 	var bodyBytes []byte
+	var err error
+	var reqData string
 	if c.Request.Body != nil {
-		bodyBytes, _ = io.ReadAll(c.Request.Body)
+		bodyBytes, err = io.ReadAll(c.Request.Body)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			c.Next()
+		}
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		reqData = string(bodyBytes)
 	}
-	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	reqData := string(bodyBytes)
 	// // 方法3
 	// w := middleware.ResponseWriter{
 	// 	ResponseWriter: c.Writer,
