@@ -91,6 +91,7 @@ type ChangeHisProductInfoModel struct {
 	Ypzczhxq string `json:"ypzczhxq" gorm:"column:ypzczhxq"` // 注册证效期
 	Gnzdl    string `json:"gnzdl" gorm:"column:gnzdl"`       // 国内总代
 	Cljflx   string `json:"cljflx" gorm:"column:cljflx"`     // 材料计费类型
+	Clcglb   string `json:"clcglb" gorm:"column:clcglb"`     // 材料采购类别(1 自购 2 备货)
 	Sfwwhp1  string `json:"sfwwhp1" gorm:"column:sfwwhp1"`   // 审核材料类别
 	Ypbz     string `json:"ypbz" gorm:"column:ypbz"`         // 材料包装
 	Cctj     string `json:"cctj" gorm:"column:cctj"`         // 储存要求

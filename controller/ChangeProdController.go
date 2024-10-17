@@ -281,22 +281,40 @@ func UpdateHospitalInfo(tx *gorm.DB, item *model.ChangeInfoElement, prod model.P
 func UpdateYgcgidInfo(tx *gorm.DB, item *model.ChangeInfoElement, prod model.ProductInfo, context *string) error {
 	// 1 已审核  null '' 0 为未审核
 	if item.YGCGID != "" {
-		if prod.HisProductCode7Status == "1" && item.YGCGID != prod.YGCGID {
-			if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ?,HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID, item.YGCGID,
-				prod.ProductInfoID); db.Error != nil {
-				tx.Rollback()
-				return db.Error
+		// 2024-09-30 只要入参与HisProductCode7Source和HisProductCode7不相同 直接更新
+		if prod.YGCGID != item.YGCGID || prod.HisProductCode7Source != item.YGCGID {
+			sqlStr := `Update TB_ProductInfo Set HisProductCode7 = ?,HisProductCode7Source = ? Where ProductInfoId =?`
+			sqlStr2 := `Update TB_ProductInfo Set HisProductCode7 = ?, HisProductCode7Source = ? ,HisProductCode7Status = '1' where ProductInfoID= ?`
+			if prod.HisProductCode7Status == "1" {
+				if db := tx.Exec(sqlStr, item.YGCGID, item.YGCGID, prod.ProductInfoID); db.Error != nil {
+					tx.Rollback()
+					return db.Error
+				}
+				*context += fmt.Sprintf("集采产品ID:HisProductCode7(%s),HisProductCode7Source(%s)变更为(%s)", prod.YGCGID, prod.HisProductCode7Source, item.YGCGID)
+			} else {
+				if db := tx.Exec(sqlStr2, item.YGCGID, item.YGCGID, prod.ProductInfoID); db.Error != nil {
+					tx.Rollback()
+					return db.Error
+				}
+				*context += fmt.Sprintf("集采产品ID:HisProductCode7(%s),HisProductCode7Source(%s)变更为(%s)并已审核", prod.YGCGID, prod.HisProductCode7Source, item.YGCGID)
 			}
-			*context += fmt.Sprintf("集采产品ID:HisProductCode7(%s)变更为(%s);", prod.YGCGID, item.YGCGID)
-		} else if item.YGCGID != prod.HisProductCode7Source {
-			if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ?, HisProductCode7Source = ? ,HisProductCode7Status = '1' where ProductInfoID= ?", item.YGCGID, item.YGCGID,
-				prod.ProductInfoID); db.Error != nil {
-				tx.Rollback()
-				return db.Error
-			}
-			*context += fmt.Sprintf("集采产品ID:HisProductCode7Source(%s)变更为(%s);", prod.HisProductCode7Source, item.YGCGID)
 		}
-
+		//	if prod.HisProductCode7Status == "1" && item.YGCGID != prod.YGCGID {
+		//		if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ?,HisProductCode7Source = ? where ProductInfoID= ?", item.YGCGID, item.YGCGID,
+		//			prod.ProductInfoID); db.Error != nil {
+		//			tx.Rollback()
+		//			return db.Error
+		//		}
+		//		*context += fmt.Sprintf("集采产品ID:HisProductCode7(%s)变更为(%s);", prod.YGCGID, item.YGCGID)
+		//	} else if item.YGCGID != prod.HisProductCode7Source {
+		//		if db := tx.Exec("Update TB_ProductInfo Set HisProductCode7 = ?, HisProductCode7Source = ? ,HisProductCode7Status = '1' where ProductInfoID= ?", item.YGCGID, item.YGCGID,
+		//			prod.ProductInfoID); db.Error != nil {
+		//			tx.Rollback()
+		//			return db.Error
+		//		}
+		//		*context += fmt.Sprintf("集采产品ID:HisProductCode7Source(%s)变更为(%s);", prod.HisProductCode7Source, item.YGCGID)
+		//	}
+		//
 	}
 	return nil
 }

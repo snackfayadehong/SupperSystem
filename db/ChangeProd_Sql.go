@@ -86,16 +86,18 @@ a.CommonName tymc,
 SUBSTRING(RegistNum,1,len(RegistNum)-23) ypzczh,
 CONVERT(varchar ,lmr.EndDate,23) AS ypzczhxq,
 '' gnzdl,
-CASE   
-WHEN a.ChargeStatus is NULL THEN '0'  
-WHEN a.ChargeStatus = '0' THEN '1'  
-WHEN a.ChargeStatus = '1' THEN '0'  
-END as cljflx,
+ CASE   
+ --WHEN a.ChargeStatus is NULL THEN '0'  
+ WHEN a.ChargeStatus = '0' THEN '1'  
+ WHEN a.ChargeStatus = '1' THEN '0'  
+ else a.ChargeStatus
+END as cljflx, 
+0 as sfwwhp1,
 case 
 when a.Buy = 0 then  1 
 when a.Buy = 1 then  2
 ELSE 3 
-END sfwwhp1,
+END clcglb,
 a.PackingInstruction ypbz,
 a.StorageCondition cctj,
 CAST ( a.ProductInfoID AS VARCHAR ( 100 ) ) + CAST ( En1.EnterpriseID AS VARCHAR ( 100 ) ) AS ypspdm,
