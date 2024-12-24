@@ -21,9 +21,9 @@ var (
 	DB *gorm.DB
 )
 
-func Init() error {
+func Init(rootPath string) error {
 	var DbPwd string
-	DbPwd, err := conf.DecryptionPwd()
+	DbPwd, err := conf.DecryptionPwd(rootPath)
 	if err != nil {
 		return err
 	}
