@@ -32,8 +32,8 @@ type Config struct {
 	} `json:"IPWhite"`
 }
 
-func InitSetting() error {
-	file, err := os.OpenFile("config.json", os.O_RDWR, 0666)
+func InitSetting(rootPath string) error {
+	file, err := os.OpenFile(rootPath+"\\config.json", os.O_RDWR, 0666)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func InitSetting() error {
 	err = json.Unmarshal(v, &Configs)
 	if Configs.DBClient.IsEc == 0 {
 		file.Close()
-		if err = writeEncryptionPwd(); err != nil {
+		if err = writeEncryptionPwd(rootPath); err != nil {
 			return err
 		}
 	}
@@ -49,11 +49,11 @@ func InitSetting() error {
 }
 
 // 读取配置文件密码加密后重新写入配置文件
-func writeEncryptionPwd() error {
+func writeEncryptionPwd(rootPath string) error {
 	// 生成公钥密钥文件
 	encry.GenerateRSAKey(2048)
 	// 打开public.pem公钥文件
-	file, err := os.Open("encry/public.pem")
+	file, err := os.Open(rootPath + "\\encry\\public.pem")
 	defer file.Close()
 	// 读取公钥
 	info, _ := file.Stat()
@@ -68,7 +68,7 @@ func writeEncryptionPwd() error {
 	}
 	// 类型断言
 	publicKey := publicKeyInterface.(*rsa.PublicKey)
-	configFile, err := os.OpenFile("config.json", os.O_RDWR, 0666)
+	configFile, err := os.OpenFile(rootPath+"\\config.json", os.O_RDWR, 0666)
 	defer configFile.Close()
 	if err != nil {
 		return err
@@ -96,9 +96,9 @@ func writeEncryptionPwd() error {
 }
 
 // DecryptionPwd 解密
-func DecryptionPwd() (pwd string, err error) {
+func DecryptionPwd(rootPath string) (pwd string, err error) {
 	// 打开私钥文件
-	file, err := os.Open("encry/private.pem")
+	file, err := os.Open(rootPath + "\\encry\\private.pem")
 	if err != nil {
 		return
 	}
