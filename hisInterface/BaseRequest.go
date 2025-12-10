@@ -7,11 +7,12 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const BaseUrl = `http://172.21.1.248:17980/api/bsp-api-engine-others/`
@@ -49,6 +50,15 @@ type DeliveryData struct {
 		Sczt string `json:"sczt"`
 		Scsm string `json:"scsm"`
 	} `json:"fhxx"`
+}
+
+// RefundData 科室退库/入库信息返回 rkfs 02
+type RefundData struct {
+	Fhxx []struct {
+		Rkdh string `json:"rkdh"`
+		Sczt string `json:"sczt"`
+		Scsm string `json:"scsm"`
+	}
 }
 
 //type KLBRResPonse[T any] struct {
