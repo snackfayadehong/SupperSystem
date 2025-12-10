@@ -1,37 +1,124 @@
 package main
 
 import (
+	"WorkloadQuery/Task"
 	"WorkloadQuery/conf"
 	clientDb "WorkloadQuery/db"
 	"WorkloadQuery/logger"
 	"WorkloadQuery/middleware"
 	"WorkloadQuery/service"
+	"context"
+	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/robfig/cron/v3"
-	"go.uber.org/zap"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
+
+	// 初始化基础组件
+	initApplication()
+	// 初始化TaskManager
+	taskManager := Task.NewTaskManager()
+	// 启动定时任务
+	if err := taskManager.Start(); err != nil {
+		zap.L().Fatal("定时任务启动失败", zap.Error(err))
+	}
+	// 程序退出清理资源
+	defer cleanupResources(taskManager)
+	// 初始化 Gin引擎和路由
+	r := setupGinEngine()
+	setupRoutes(r)
+	// 启动辅助服务
+	//startAuxiliaryServices(r)
+	// 主服务
+	startMainService(r, taskManager)
+}
+
+// 初始化应用程序2
+func initApplication() {
+	runtime.SetBlockProfileRate(1)
+	// 读取配置文件
+	rootFile, _ := exec.LookPath(os.Args[0])
+	path, err := filepath.Abs(rootFile)
+	if err != nil {
+		panic(fmt.Sprintf("获取程序路径失败:%v", err))
+	}
+	index := strings.LastIndex(path, string(os.PathSeparator))
+	rootPath := path[:index]
+	// 初始化配置
+	err = conf.InitSetting(rootPath)
+	if err != nil {
+		panic(fmt.Sprintf("初始化配置失败:%v", err))
+	}
+	// 初始化日志
+	err = logger.InitLog()
+	if err != nil {
+		panic(fmt.Sprintf("初始化日志失败:%v", err))
+	}
+	// 初始化数据库
+	err = clientDb.Init(rootPath)
+	// 根据配置文件设置选择程序环境
+	switch conf.Configs.Server.RunModel {
+	case "debug":
+		gin.SetMode(gin.DebugMode)
+	case "release":
+		gin.SetMode(gin.ReleaseMode)
+	case "test":
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.DebugMode)
+	}
+}
+
+// 清理资源
+func cleanupResources(taskManager *Task.TaskManager) {
+	// 停止定时
+	taskManager.Stop()
+	// 关闭日志
+	logger.Close()
+}
+
+// Gin引擎
+func setupGinEngine() *gin.Engine {
 	r := gin.New()
-	r.Use(Cors()) // 跨域
-	// defer logFile.Close()
-	// r.Use(gin.LoggerWithConfig(*logConfig))
-	// r.Use(gin.Recovery())
-	white := conf.Configs.IPWhite.IPWhiteList
-	r.Use(IPWhiteList(white), logger.GinLogger, logger.GinRecovery(true))
+	// 信任代理
 	err := r.SetTrustedProxies([]string{"172.21.1.158"})
 	if err != nil {
 		panic(err)
 	}
+	// 中间件
+	white := conf.Configs.IPWhite.IPWhiteList
+	r.Use(Cors())
+	r.Use(IPWhiteList(white), logger.GinLogger, logger.GinRecovery(true))
+	return r
+}
+
+// 设置路由
+func setupRoutes(r *gin.Engine) {
+	// pprof
 	r.GET("/debug/pprof/*any", gin.WrapH(http.DefaultServeMux))
+	// 健康检查路由
+	r.GET("/health", func(c *gin.Context) {
+		c.JSONP(http.StatusOK, gin.H{
+			"status":    "healthy",
+			"timestamp": time.Now().Unix(),
+			"service":   "WorkloadQuery",
+		})
+	})
+
+	// API路由组
 	router := r.Group("/api")
 	{
 		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)
@@ -43,29 +130,42 @@ func main() {
 			v1.POST("/change_prod", middleware.CheckRequestProdInfo, service.ChangeProductInfoService)
 		}
 	}
-	// pprof
+}
+
+// 主服务
+func startMainService(r *gin.Engine, task *Task.TaskManager) {
+	// create Http
+	addr := fmt.Sprintf("%s:%s", conf.Configs.Server.IP, conf.Configs.Server.Port)
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      r,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	// start goroutine
 	go func() {
-		if err := http.ListenAndServe("localhost:3008", nil); err != nil {
-			zap.L().Error("ERROR", zap.Error(err))
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
 		}
 	}()
-	// cron实例
-	c := cron.New()
-	_, err = c.AddFunc("*/10 * * * *", service.WrappedTask)
-	if err != nil {
-		zap.L().Error("添加定时任务失败", zap.Error(err))
-	}
-	go func() {
-		c.Start()
-		select {}
-	}()
-	defer c.Stop()
-	defer logger.Close()
-	// start
-	err = r.Run(fmt.Sprintf("%s:%s", conf.Configs.Server.IP, conf.Configs.Server.Port))
-	if err != nil {
-		zap.L().Error("ERROR", zap.Error(err))
-		return
+	// 关机
+	setupGracefulShutdown(server, task)
+}
+
+// 关机
+func setupGracefulShutdown(server *http.Server, taskManager *Task.TaskManager) {
+	// 等待终端信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	// 阻塞直到收到信号
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	// 关机
+	if err := server.Shutdown(ctx); err != nil {
+		zap.L().Error("Http服务关闭失败", zap.Error(err))
 	}
 }
 
@@ -95,9 +195,6 @@ func IPWhiteList(w []string) gin.HandlerFunc {
 // Cors 开启跨域
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// c.Writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
-		// c.Writer.Header().Set("Access-Control-Allow-Methods", "POST")
-		// c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type,Content-Length")
 		if conf.Configs.Server.RunModel == "debug" {
 			c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
 		} else {
@@ -111,38 +208,5 @@ func Cors() gin.HandlerFunc {
 		} else {
 			c.Next()
 		}
-	}
-}
-
-// 初始化程序
-func init() {
-	runtime.SetBlockProfileRate(1)
-	// 读取配置文件
-	rootfile, _ := exec.LookPath(os.Args[0])
-	path, err := filepath.Abs(rootfile)
-	index := strings.LastIndex(path, string(os.PathSeparator))
-	rootPath := path[:index]
-	err = conf.InitSetting(rootPath)
-	if err != nil {
-		panic(err)
-	}
-	err = logger.InitLog()
-	if err != nil {
-		return
-	}
-	err = clientDb.Init(rootPath)
-	if err != nil {
-		panic(err)
-	}
-	// 根据配置文件设置选择程序环境
-	switch conf.Configs.Server.RunModel {
-	case "debug":
-		gin.SetMode(gin.DebugMode)
-	case "release":
-		gin.SetMode(gin.ReleaseMode)
-	case "test":
-		gin.SetMode(gin.TestMode)
-	default:
-		gin.SetMode(gin.DebugMode)
 	}
 }

@@ -16,9 +16,10 @@ var Configs *Config
 
 type Config struct {
 	Server struct {
-		IP       string `json:"Ip"`
-		Port     string `json:"Port"`
-		RunModel string `json:"RunModel"`
+		IP              string `json:"Ip"`
+		Port            string `json:"Port"`
+		RunModel        string `json:"RunModel"`
+		HealthCheckPort string `json:"HealthCheckPort"`
 	} `json:"Server"`
 	DBClient struct {
 		IP       string `json:"ip"`
@@ -30,6 +31,10 @@ type Config struct {
 	IPWhite struct {
 		IPWhiteList []string `json:"IPWhiteList"`
 	} `json:"IPWhite"`
+	CustomTaskTime struct {
+		StartTime int `json:"StartTime"`
+		EndTime   int `json:"EndTime"`
+	} `json:"CustomTaskTime"`
 }
 
 func InitSetting(rootPath string) error {

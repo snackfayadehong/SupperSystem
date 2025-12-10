@@ -1,15 +1,24 @@
 package utity
 
 import (
+	"WorkloadQuery/conf"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 )
 
-// RemoveAssignDir 工具包
-// 清楚目录下指定后缀文件名
+// 工具包
+
+// IsWithinWorkingTime 判断是否在工作时间;决定是否执行作业
+func IsWithinWorkingTime() bool {
+	hour := time.Now().Hour()
+	return hour >= conf.Configs.CustomTaskTime.StartTime && hour < conf.Configs.CustomTaskTime.EndTime
+}
+
+// RemoveAssignDir 清楚目录下指定后缀文件名
 func RemoveAssignDir(dirPath, suffix string) (err error) {
 	file := make([]string, 0, 500)
 	//suffix = strings.ToUpper(suffix)
