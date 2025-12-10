@@ -15,7 +15,7 @@ const QueryBillNo = `select
 	AND Delivery.[Status] IN (61, 71, 41, 81, 22, 91, 19, 29, 99)  
 	AND (Delivery.[IsStockGoods] <> '1' OR Delivery.[IsStockGoods] IS NULL)
 	AND ISNULL(deliveryRecord.OutNumber,'') = ''
-	AND deliveryRecord.CreateTime >= ? --AND deliveryRecord.CreateTime <= ?
+	AND deliveryRecord.CreateTime >= ? AND deliveryRecord.CreateTime <= ?
 	group by 
 	deliveryRecord.DetailSort,
 	delivery.DeliveryID 
