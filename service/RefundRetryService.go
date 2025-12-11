@@ -19,7 +19,7 @@ func RefundRetryService() {
 	if *r.Count == 0 {
 		return
 	}
-	logMsg = fmt.Sprintf("\r\n事件:查询领用出库失败业务数据\r\n查询结果:%+v\r\n%v\r\n%s\r\n", *r.Count, *r.Re, logger.LoggerEndStr)
+	logMsg = fmt.Sprintf("\r\n事件:查询科室退库失败业务数据\r\n查询结果:%+v\r\n%v\r\n%s\r\n", *r.Count, *r.Re, logger.LoggerEndStr)
 	logger.AsyncLog(logMsg)
 	//接口调用
 	err = r.RetryRefundToHis()

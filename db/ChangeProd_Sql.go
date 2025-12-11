@@ -155,7 +155,7 @@ where IsDefault != '1' and isvoid = 0
  ) lmr ON lmr.rn = 1   
  AND lmr.ProductID = a.ProductInfoID ------最新注册证  
 left join TB_ProductCategory cate on cate.CategoryCode = a.CategoryCode   
-and cate.SubjectGrade = 3   
+--and cate.SubjectGrade = 3   
 and cate.IsVoid = 0
 left join TB_ProductCustomCategory cus on cus.CusCategoryCode = a.CusCategoryCode
 left join TB_ProductInfoJCSysCode jcxx on jcxx.prod_id = a.ProductInfoID  and jcxx.IsVoid = 0
