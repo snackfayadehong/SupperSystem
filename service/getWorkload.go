@@ -2,26 +2,28 @@ package service
 
 import (
 	"WorkloadQuery/controller"
+	http2 "WorkloadQuery/http"
+	"WorkloadQuery/model"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"net/http"
 )
 
 func GetWorkload(c *gin.Context) {
-	workloadTimeInterval := controller.QueryWorkloadTime{}
+	res := http2.NewBaseResponse()
+	workloadTimeInterval := controller.QueryDate{}
 	_ = c.ShouldBindBodyWith(&workloadTimeInterval, binding.JSON)
-	//workloadTimeInterval.StartTime += " 00:00:00.000"
-	//workloadTimeInterval.EndTime += " 23:59:59.000"
-	workloads := workloadTimeInterval.UserWorkloadQuery_New()
+	workloads, _ := workloadTimeInterval.GetWorkloadStatistics()
 	if workloads == nil || len(*workloads) == 0 {
-		c.JSON(http.StatusNoContent, gin.H{
-			"msg":  "无数据",
-			"Data": "",
-		})
-	} else {
-		c.JSON(http.StatusOK, gin.H{
-			"msg":  "成功",
-			"Data": workloads,
-		})
+		res.Code = 1
+		res.Message = "无数据记录"
+		res.Data = []model.WorkloadData{}
+		c.JSON(http.StatusOK, res)
+		return
 	}
+	res.Data = *workloads
+	res.Message = "查询成功"
+	res.Code = http.StatusOK
+	c.JSON(http.StatusOK, res)
 }

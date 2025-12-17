@@ -1,44 +1,18 @@
 package model
 
-// 高值库房工作量查询模型
+// 库房工作量查询模型
 
-// UserProdAccept 验收
-type UserProdAccept struct {
-	Name        string `gorm:"column:MEnName"`
-	ProdAcSpec  int    `gorm:"column:prodSpecNum"`
-	ProdAcBill  int    `gorm:"column:billNum"`
-	ProdAcTotal string `gorm:"column:totalAmount"`
+type WorkloadRequest struct {
+	StartTime string `json:"startTime" binding:"required"`
+	EndTime   string `json:"endTime" binding:"required"`
 }
-
-// DepartmentCollar 出库
-type DepartmentCollar struct {
-	Name        string `gorm:"column:BLMakerName"`
-	ProdDpSpec  int    `gorm:"column:DpSpecNum"`
-	ProdDpBill  int    `gorm:"column:DpBillNum"`
-	ProdDpTotal string `gorm:"column:DpTotalAmount"`
-}
-
-// RefundProd 退货
-type RefundProd struct {
-	Name     string `gorm:"column:EmployeeName"`
-	RefSpec  int    `gorm:"column:ReFSpecNum"`
-	RefBill  int    `gorm:"column:RefBillNum"`
-	RefTotal string `gorm:"column:RefTotalAmount"`
-}
-type UserWorkloadInfo struct {
-	Name             string `json:"name"`
-	ProdAcSpec       int    `json:"prodAcSpec"`
-	ProdAcBill       int    `json:"prodAcBill"`
-	ProdAcTotal      string `json:"prodAcTotal"`
-	ProdDpSpec       int    `json:"prodDpSpec"`
-	ProdDpBill       int    `json:"prodDpBill"`
-	ProdDpTotal      string `json:"prodDpTotal"`
-	RefSpec          int    `json:"refSpec"`
-	RefBill          int    `json:"refBill"`
-	RefTotal         string `json:"refTotal"`
-	TotalBillAmount  int    `json:"total_bill_amount"`
-	TotalSpecAmount  int    `json:"total_spec_amount"`
-	TotalTotalAmount string `json:"total_total_amount"`
+type WorkloadData struct {
+	OperatorName  string  `gorm:"column:OperatorName" json:"operator_name"`
+	OperationType string  `gorm:"column:OperationType" json:"operation_type"`
+	Category      string  `gorm:"column:Category" json:"category"`
+	SpecCount     int     `gorm:"column:SpecCount" json:"spec_count"`
+	BillCount     int     `gorm:"column:BillCount" json:"bill_count"`
+	TotalAmount   float64 `gorm:"column:TotalAmount" json:"total_amount"`
 }
 
 // UserWorkloadInfoNew 2024-07-18 加入普耗工作量数据，重新调整工作量查询逻辑

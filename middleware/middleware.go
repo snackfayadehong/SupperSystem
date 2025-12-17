@@ -3,15 +3,17 @@ package middleware
 import (
 	"WorkloadQuery/controller"
 	clientDb "WorkloadQuery/db"
+	http2 "WorkloadQuery/http"
 	"WorkloadQuery/logger"
 	"WorkloadQuery/model"
 	"WorkloadQuery/service"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 type QueryTime struct {
@@ -72,23 +74,22 @@ func checkCode(element model.ChangeInfoElement) error {
 
 // CheckTime 校验请求数据是否为合法时间
 func CheckTime(c *gin.Context) {
+	res := http2.NewBaseResponse()
 	var qt QueryTime
 	err := c.ShouldBindBodyWith(&qt, binding.JSON)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"msg":  "无效请求数据",
-			"Data": err,
-		})
+		res.Code = 1
+		res.Message = err.Error()
+		c.JSON(http.StatusBadRequest, res)
 		c.Abort()
 	}
 	v1, err := time.Parse("2006-01-02", qt.Start)
 	v2, err2 := time.Parse("2006-01-02", qt.End)
 	if err == nil && err2 == nil {
 		if v1.IsZero() || v2.IsZero() {
-			c.JSON(http.StatusOK, gin.H{
-				"msg":  "无效请求数据,请核查请求时间",
-				"Data": "",
-			})
+			res.Code = 1
+			res.Message = "无效请求数据,请核查请求时间"
+			c.JSON(http.StatusBadRequest, res)
 			c.Abort()
 		}
 	}
