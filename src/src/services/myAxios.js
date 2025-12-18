@@ -1,46 +1,56 @@
+// src/src/services/myAxios.js 优化版
 import axios from "axios";
-import { ElLoading } from "element-plus";
-import "element-plus/theme-chalk/el-loading.css";
 
-// 自定义axios实例
+// 注意：由于配置了自动导入，组件内不需要手动 import ElMessage
+// 但在纯 JS 文件中仍需手动引入样式和组件
+import { ElLoading, ElMessage } from "element-plus";
+import "element-plus/theme-chalk/el-loading.css";
+import "element-plus/theme-chalk/el-message.css";
+
 const myAxios = axios.create({
-    // 环境切换
     baseURL: import.meta.env.MODE === "production" ? import.meta.env.VITE_HTTP : import.meta.env.VITE_BASE_URL,
-    // baseURL: "http://172.21.1.75:3007/api",
-    // baseURL: "http://127.0.0.1:3007/api",
     timeout: 10000,
-    withCredentialsL: false //跨域请求需要凭证
+    withCredentials: false // 修复：去掉了原代码中末尾多余的 'L'
 });
 
 myAxios.defaults.headers.post["Content-Type"] = "application/json;charset=UTF-8";
 
 let loadingInstance = null;
-// 请求拦截器
+
 myAxios.interceptors.request.use(
-    req => {
-        loadingInstance = ElLoading.service({ fullscreen: true });
-        return req;
+    config => {
+        loadingInstance = ElLoading.service({ 
+            fullscreen: true,
+            background: 'rgba(0, 0, 0, 0.1)',
+            text: '数据加载中...'
+        });
+        return config;
     },
     err => {
-        loadingInstance.close();
+        if (loadingInstance) loadingInstance.close();
         return Promise.reject(err);
     }
 );
-// 响应拦截器
+
 myAxios.interceptors.response.use(
-    res => {
-        if (res.status !== 200) {
-            loadingInstance.close();
-            return "";
+    response => {
+        if (loadingInstance) loadingInstance.close();
+        
+        // 统一处理后端返回格式
+        const { code, message, data } = response.data;
+        
+        // 假设 code 200 为成功
+        if (code === 200 || response.status === 200) {
+            return response.data; // 返回全量数据包含 code 和 data
         }
-        loadingInstance.close();
-        return res.data;
+        
+        ElMessage.error(message || "系统业务异常");
+        return Promise.reject(new Error(message || "Error"));
     },
     err => {
-        loadingInstance.close();
-        if (err.message.includes("timeout")) {
-            alert("网络异常,请重试！");
-        }
+        if (loadingInstance) loadingInstance.close();
+        const errorMsg = err.message.includes("timeout") ? "请求超时，请检查后端服务" : "网络连接异常";
+        ElMessage.error(errorMsg);
         return Promise.reject(err);
     }
 );

@@ -1,15 +1,13 @@
 <template>
-    <el-container class="layout-container">
-        <el-aside :width="isCollapse ? '64px' : '220px'" class="aside-menu">
-            <el-scrollbar>
-                <Sidebar :collapse="isCollapse" />
-            </el-scrollbar>
-        </el-aside>
+    <el-container class="layout-wrapper">
+        <el-header height="56px" class="header-container">
+            <TopBar />
+        </el-header>
 
-        <el-container class="main-wrapper">
-            <el-header height="56px" class="header-navbar">
-                <TopBar @toggle-menu="isCollapse = !isCollapse" :is-collapse="isCollapse" />
-            </el-header>
+        <el-container class="sub-container">
+            <el-aside :width="appStore.isCollapse ? '64px' : '220px'" class="aside-container">
+                <Sidebar :collapse="appStore.isCollapse" />
+            </el-aside>
 
             <el-main class="main-content">
                 <router-view v-slot="{ Component }">
@@ -22,22 +20,46 @@
     </el-container>
 </template>
 
-<script setup>
-import { ref } from "vue";
+<script setup name="MainLayout">
+import { useAppStore } from "@/stores/app";
 import TopBar from "./components/TopBar.vue";
 import Sidebar from "./components/Sidebar.vue";
 
-const isCollapse = ref(false);
+const appStore = useAppStore();
 </script>
 
 <style scoped>
-.layout-container { height: 100vh; overflow: hidden; }
-.aside-menu { background: #001529; transition: width 0.3s ease-in-out; }
-.main-wrapper { flex-direction: column; background: #f0f2f5; }
-.header-navbar { background: #fff; box-shadow: 0 1px 4px rgba(0,21,41,0.08); z-index: 10; }
+.layout-wrapper {
+    height: 100vh;
+    overflow: hidden;
+}
 
-/* 页面切换动画 */
-.fade-transform-enter-active, .fade-transform-leave-active { transition: all 0.3s; }
-.fade-transform-enter-from { opacity: 0; transform: translateX(-30px); }
-.fade-transform-leave-to { opacity: 0; transform: translateX(30px); }
+.aside-container {
+    background-color: #001529;
+    transition: width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+    overflow: hidden;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.main-content {
+    background-color: var(--el-bg-color-page); /* 使用 Element Plus 的背景变量以适配暗黑模式 */
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* 页面切换动画：平滑淡入并轻微横移 */
+.fade-transform-enter-active,
+.fade-transform-leave-active {
+    transition: all 0.3s ease;
+}
+
+.fade-transform-enter-from {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+.fade-transform-leave-to {
+    opacity: 0;
+    transform: translateX(20px);
+}
 </style>
