@@ -1,47 +1,54 @@
 <template>
     <div class="top-bar">
         <div class="left">
-            <!-- 折叠按钮 -->
-            <el-button text @click="$emit('toggle-menu')">
-                <el-icon><Menu /></el-icon>
+            <el-button text @click="$emit('toggle-menu')" class="fold-btn">
+                <el-icon :size="20">
+                    <component :is="isCollapse ? Expand : Fold" />
+                </el-icon>
             </el-button>
-            <!-- 左侧：面包屑 -->
+            
             <el-breadcrumb separator="/">
-                <el-breadcrumb-item v-for="item in breadcrumb" :key="item.path">
-                    {{ item.label }}
-                </el-breadcrumb-item>
+                <transition-group name="breadcrumb">
+                    <el-breadcrumb-item v-for="item in breadcrumb" :key="item.path">
+                        {{ item.label }}
+                    </el-breadcrumb-item>
+                </transition-group>
             </el-breadcrumb>
         </div>
 
-        <!-- 右侧功能区 -->
         <div class="right">
-            <!-- 系统状态 -->
-            <div class="status">
-                <span class="dot" :class="status"></span>
-                {{ statusText }}
-            </div>
-
-            <!-- 当前时间 -->
-            <div class="time">
-                {{ currentTime }}
-            </div>
-
-            <!-- 全屏 -->
-            <el-tooltip content="全屏">
-                <el-button text @click="toggleFullscreen"> ⛶ </el-button>
+            <el-tooltip :content="statusText">
+                <div class="status-card">
+                    <span class="dot" :class="status"></span>
+                    <span class="status-label">{{ statusText }}</span>
+                </div>
             </el-tooltip>
 
-            <!-- 用户 -->
-            <el-dropdown>
+            <div class="time-box">
+                <el-icon><Clock /></el-icon>
+                <span>{{ currentTime }}</span>
+            </div>
+
+            <el-tooltip content="全屏切换">
+                <el-button text @click="toggleFullscreen" class="action-btn">
+                    <el-icon><FullScreen /></el-icon>
+                </el-button>
+            </el-tooltip>
+
+            <el-dropdown trigger="click">
                 <span class="user-info">
-                    <el-avatar :size="32" :src="user.avatar" />
+                    <el-avatar :size="30" :src="user.avatar" />
                     <span class="name">{{ user.name }}</span>
+                    <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                 </span>
 
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <el-dropdown-item>个人信息</el-dropdown-item>
-                        <el-dropdown-item divided @click="logout"> 退出登录 </el-dropdown-item>
+                        <el-dropdown-item :icon="User">个人信息</el-dropdown-item>
+                        <el-dropdown-item :icon="Setting">偏好设置</el-dropdown-item>
+                        <el-dropdown-item divided @click="logout" :icon="SwitchButton" class="logout-item"> 
+                            退出登录 
+                        </el-dropdown-item>
                     </el-dropdown-menu>
                 </template>
             </el-dropdown>
@@ -49,86 +56,94 @@
     </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onUnmounted, defineProps, defineEmits } from 'vue';
+import { useRoute } from 'vue-router';
 import { getBreadcrumb } from "../utils/breadcrumb";
-import { Menu } from "@element-plus/icons-vue";
+// 确保所有用到的图标都已导入
+import { Fold, Expand, FullScreen, Clock, ArrowDown, User, Setting, SwitchButton } from "@element-plus/icons-vue";
 
-export default {
-    name: "TopBar",
-    components: { Menu },
-    data() {
-        return {
-            user: {
-                name: "Admin",
-                avatar: "https://dummyimage.com/100x100"
-            },
-            status: "ok", // ok | warn | error
-            currentTime: ""
-        };
-    },
-    computed: {
-        breadcrumb() {
-            return getBreadcrumb(this.$route.path);
-        },
-        statusText() {
-            return {
-                ok: "系统正常",
-                warn: "存在告警",
-                error: "系统异常"
-            }[this.status];
-        }
-    },
-    mounted() {
-        this.updateTime();
-        this.timer = setInterval(this.updateTime, 1000);
-    },
-    beforeUnmount() {
-        clearInterval(this.timer);
-    },
-    methods: {
-        updateTime() {
-            const now = new Date();
-            const pad = n => String(n).padStart(2, "0");
-            this.currentTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-        },
-        toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                document.exitFullscreen();
-            }
-        },
-        logout() {
-            console.log("logout");
-            // 以后：清 token + router.push('/login')
-        }
+const props = defineProps({
+    isCollapse: Boolean
+});
+const emit = defineEmits(['toggle-menu']);
+
+const route = useRoute();
+const status = ref("ok"); // ok | warn | error
+const currentTime = ref("");
+let timer = null;
+
+const user = ref({
+    name: "Admin",
+    avatar: "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+});
+
+// 计算面包屑
+const breadcrumb = computed(() => getBreadcrumb(route.path));
+
+// 系统状态文字映射
+const statusText = computed(() => ({
+    ok: "系统正常",
+    warn: "存在告警",
+    error: "系统异常"
+}[status.value]));
+
+// 更新时间
+const updateTime = () => {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    currentTime.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+};
+
+onMounted(() => {
+    updateTime();
+    timer = setInterval(updateTime, 1000);
+});
+
+onUnmounted(() => {
+    if (timer) clearInterval(timer); // 记得清除定时器，防止内存泄漏
+});
+
+const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+    } else {
+        document.exitFullscreen();
     }
+};
+
+const logout = () => {
+    console.log("执行登出逻辑...");
 };
 </script>
 
 <style scoped>
-.left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
+/* 保持原有样式，仅做微调以支持动画 */
 .top-bar {
     height: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0 16px;
 }
 
-.right {
+.left, .right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 20px;
 }
 
-.status {
+.fold-btn:hover {
+    color: #409eff;
+    background: transparent;
+}
+
+.status-card {
     display: flex;
     align-items: center;
+    padding: 4px 12px;
+    background: #f5f7fa;
+    border-radius: 20px;
     font-size: 13px;
 }
 
@@ -136,30 +151,61 @@ export default {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    margin-right: 4px;
+    margin-right: 8px;
 }
 
-.dot.ok {
-    background: #67c23a;
-}
-.dot.warn {
-    background: #e6a23c;
-}
-.dot.error {
-    background: #f56c6c;
-}
+.dot.ok { background: #67c23a; box-shadow: 0 0 4px #67c23a; }
+.dot.warn { background: #e6a23c; }
+.dot.error { background: #f56c6c; }
 
-.time {
-    font-size: 13px;
-    color: #666;
+.time-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #606266;
+    font-family: monospace;
 }
 
 .user-info {
     display: flex;
     align-items: center;
     cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
 }
+
+.user-info:hover {
+    background: #f0f2f5;
+}
+
 .name {
-    margin-left: 6px;
+    margin: 0 8px;
+    font-weight: 500;
+}
+
+.logout-item {
+    color: #f56c6c;
+}
+
+/* 面包屑切换动画 */
+.breadcrumb-enter-active,
+.breadcrumb-leave-active {
+  transition: all 0.5s;
+}
+
+.breadcrumb-enter-from,
+.breadcrumb-leave-active {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.breadcrumb-move {
+  transition: all 0.5s;
+}
+
+.breadcrumb-leave-active {
+  position: absolute;
 }
 </style>

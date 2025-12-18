@@ -5,6 +5,7 @@ import ElementPlus from "element-plus";
 import zhCn from "element-plus/dist/locale/zh-cn.mjs"; // 组件中文化
 import router from "./router";
 import "@/styles/global.css";
+import 'element-plus/dist/index.css'
 
 const app = createApp(App);
 // 中文
