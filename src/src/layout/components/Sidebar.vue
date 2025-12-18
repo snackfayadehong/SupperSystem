@@ -4,7 +4,7 @@
             <transition name="logo-fade">
                 <div v-if="!collapse" class="logo-full" key="full">
                     <el-icon class="logo-icon"><Monitor /></el-icon>
-                    <span class="logo-text">WorkloadQuery</span>
+                    <span class="logo-text">SupperSystem</span>
                 </div>
                 <div v-else class="logo-mini" key="mini">
                     <span class="logo-text-short">WQ</span>

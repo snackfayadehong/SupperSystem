@@ -1,17 +1,54 @@
-html,
-body,
+/* 修改 global.css */
+
+/* 默认明亮模式变量保持不变 */
+:root {
+    --dashboard-bg: #f6f8fb;
+    --card-bg: #ffffff;
+    --text-main: #262626;
+    --text-sub: #8c8c8c;
+    --border-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 核心优化：暗黑模式变量适配 */
+html.dark {
+    /* 背景使用深灰而非纯黑 */
+    --dashboard-bg: #121212; 
+    /* 卡片颜色比背景稍浅，体现层次感 */
+    --card-bg: #1e1e1e; 
+    --text-main: #e5eaf3;
+    --text-sub: #a3a3a3;
+    /* 边框使用半透明白色，模拟高光而非阴影 */
+    --border-color: rgba(255, 255, 255, 0.08);
+
+    /* 强制覆盖 Element Plus 变量以匹配我们的设计 */
+    --el-bg-color: #1e1e1e;
+    --el-bg-color-page: #121212;
+    --el-border-color-light: rgba(255, 255, 255, 0.1);
+    --el-text-color-primary: #e5eaf3;
+}
+
+body {
+    background-color: var(--dashboard-bg);
+    color: var(--text-main);
+    transition: background-color 0.3s, color 0.3s;
+}
+/* 强制重置 html 和 body */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  /* 禁止最外层滚动，由布局容器控制 */
+  overflow: hidden; 
+  box-sizing: border-box;
+}
+
 #app {
-    height: 100%;
-    margin: 0;
-    background-color: #f2f3f5;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  height: 100%;
+  width: 100%;
 }
 
-.sidebar {
-    width: 220px;
-    transition: width 0.2s ease;
-}
-
-.sidebar.collapsed {
-    width: 64px;
+/* 统一解决盒子模型问题，防止 padding 撑开宽度产生横向滚动条 */
+*, *::before, *::after {
+  box-sizing: inherit;
 }

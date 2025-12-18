@@ -1,22 +1,24 @@
-// src/src/stores/app.js (新创建)
+// src/stores/app.js
 import { defineStore } from 'pinia'
 
 export const useAppStore = defineStore('app', {
   state: () => ({
+    // 侧边栏折叠状态
     isCollapse: false,
-    systemStatus: 'ok', // 'ok' | 'warn' | 'error'
-    userInfo: {
-      name: 'Admin',
-      avatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
-    }
+    // 系统标题
+    systemTitle: 'WorkloadQuery',
+    // 当前系统状态: 'ok' | 'warn' | 'error'
+    systemStatus: 'ok'
   }),
-  persist:true,
   actions: {
     toggleSidebar() {
       this.isCollapse = !this.isCollapse
-    },
-    updateStatus(status) {
-      this.systemStatus = status
     }
+  },
+  // 开启持久化：刷新页面后折叠状态依然保留
+  persist: {
+    key: 'app-state',
+    storage: localStorage,
+    paths: ['isCollapse'] 
   }
 })
