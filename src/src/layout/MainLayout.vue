@@ -1,46 +1,57 @@
 <template>
     <el-container style="height: 100vh">
-        <el-aside width="220px">
-            <el-menu router>
-                <template v-for="item in menu" :key="item.label">
-                    <el-sub-menu v-if="item.children" :index="item.label">
-                        <template #title>{{ item.label }}</template>
-
-                        <el-menu-item v-for="child in item.children" :key="child.path" :index="child.path">
-                            {{ child.label }}
-                        </el-menu-item>
-                    </el-sub-menu>
-
-                    <el-menu-item v-else :index="item.path">
-                        {{ item.label }}
-                    </el-menu-item>
-                </template>
-            </el-menu>
-        </el-aside>
+        <!-- 顶部导航栏 -->
+        <el-header height="56px" class="header">
+            <TopBar />
+        </el-header>
 
         <el-container>
-            <el-header>
-                <NavigationBar />
-            </el-header>
+            <!-- 左侧菜单 -->
+            <el-aside width="220px" class="sidebar">
+                <Sidebar />
+            </el-aside>
 
-            <el-main>
-                <router-view />
+            <!-- 主内容区 -->
+            <el-main class="content">
+                <div class="page-container">
+                    <router-view />
+                </div>
             </el-main>
         </el-container>
     </el-container>
 </template>
 
 <script>
-import menu from "@/router/menu";
-import NavigationBar from "@/components/NavigationBarTop/NavigationBar.vue";
+import TopBar from "./components/TopBar.vue";
+import Sidebar from "./components/Sidebar.vue";
 
 export default {
     name: "MainLayout",
-    components: { NavigationBar },
-    data() {
-        return {
-            menu
-        };
+    components: {
+        TopBar,
+        Sidebar
     }
 };
 </script>
+
+<style>
+.siderbar {
+    background: #001529;
+    color: #fff;
+}
+.header {
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 21, 41, 0, 08);
+    z-index: 10;
+}
+.content {
+    padding: 16px;
+}
+.page-container {
+    background: #fff;
+    border-radius: 6px;
+    padding: 16px;
+    min-height: calc(100vh - 120px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+</style>

@@ -1,26 +1,19 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from "vue-router";
-import MainLayout from "../layout/MainLayout.vue";
+import MainLayout from "@/layout/MainLayout.vue";
 import menuList from "./menu";
 
+//  1. 一次性声明所有 pages
+const pages = import.meta.glob("../pages/**/*.vue");
+console.log("pages", pages);
+
 function loadView(view) {
-    return () => import(`@/pages/${view}.vue`);
-}
-
-function buildRoutes(menu) {
-    const routes = [];
-
-    menu.forEach(item => {
-        if (item.children && item.children.length > 0) {
-            routes.push(...buildRoutes(item.children));
-        } else if (item.path && item.component) {
-            routes.push({
-                path: item.path,
-                component: loadView(item.component)
-            });
-        }
-    });
-
-    return routes;
+    const key = `../pages/${view}.vue`;
+    const loader = pages[key];
+    if (!loader) {
+        console.error(`❌ 页面不存在: ${key}`);
+    }
+    return loader;
 }
 
 const routes = [
@@ -28,11 +21,17 @@ const routes = [
         path: "/",
         component: MainLayout,
         redirect: "/home",
-        children: buildRoutes(menuList)
+        children: menuList.map(item => ({
+            path: item.path,
+            name: item.name,
+            component: loadView(item.component)
+        }))
     }
 ];
 
-export default createRouter({
+const router = createRouter({
     history: createWebHistory(),
     routes
 });
+
+export default router;

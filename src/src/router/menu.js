@@ -7,25 +7,17 @@
  * 4. children：子菜单（可选）
  */
 
+// src/router/menu.js
+
 export default [
     {
-        label: "首页",
         path: "/home",
+        label: "首页",
         component: "home/HomePage"
     },
     {
-        label: "工作量",
         path: "/workload",
+        label: "工作量",
         component: "workload/WorkloadPage"
-    },
-    {
-        label: "采购管理",
-        children: [
-            {
-                label: "采购汇总",
-                path: "/purchase",
-                component: "purchase/PurchaseSummaryPage"
-            }
-        ]
     }
 ];
