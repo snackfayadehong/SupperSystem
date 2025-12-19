@@ -34,7 +34,7 @@ export function useWorkload() {
             });
 
             // 这里的 res 已经是 myAxios 拦截器处理后的 res.data
-            if (res.code === 200) {
+            if (res.code === 0) {
                 rawData.value = res.data || [];
             } else {
                 ElMessage.error(res.message || "获取数据失败");
