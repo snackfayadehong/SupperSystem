@@ -40,7 +40,7 @@ myAxios.interceptors.response.use(
         const { code, message, data } = response.data;
         
         // 假设 code 200 为成功
-        if (code === 200 || response.status === 200) {
+        if (code === 0 || response.status === 200) {
             return response.data; // 返回全量数据包含 code 和 data
         }
         
