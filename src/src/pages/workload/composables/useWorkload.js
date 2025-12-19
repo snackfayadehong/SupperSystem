@@ -1,6 +1,7 @@
 import { ref, computed, onMounted, watch } from "vue";
 import myAxios from "@/services/myAxios";
 import { ElMessage } from "element-plus";
+import dayjs from "dayjs";
 
 export function useWorkload() {
     // --- 1. 数据状态 ---
@@ -23,11 +24,9 @@ export function useWorkload() {
         loading.value = true;
         try {
             // 注意：这里对接后端聚合接口
-            const res = await myAxios.get("/api/workload/list", {
-                params: {
-                    startTime: dateRange.value?.[0] || "",
-                    endTime: dateRange.value?.[1] || ""
-                }
+            const res = await myAxios.post("/getWorkload", {
+                startTime: dateRange.value?.[0] ? dayjs(dateRange.value[0]).format("YYYY-MM-DD") : "",
+                endTime: dateRange.value?.[1] ? dayjs(dateRange.value[1]).format("YYYY-MM-DD") : ""
             });
 
             // 这里的 res 已经是 myAxios 拦截器处理后的 res.data

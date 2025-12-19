@@ -2,11 +2,36 @@ package service
 
 import (
 	"WorkloadQuery/controller"
+	http2 "WorkloadQuery/http"
 	"WorkloadQuery/model"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
+
+var WorkloadServiceInstance = &WorkloadService{
+	workloadCtrl: controller.WorkloadQueryController{},
+}
 
 type WorkloadService struct {
 	workloadCtrl controller.WorkloadQueryController
+}
+
+func (s *WorkloadService) HandleWorkloadRequest(c *gin.Context) {
+	res := http2.NewBaseResponse()
+	// 从中间件 context 获取时间
+	starTime := c.GetString("startTime")
+	endTime := c.GetString("endTime")
+	data, err := s.GetWorkloadReport(starTime, endTime)
+	if err != nil {
+		res.Code = 1
+		res.Message = "查询失败" + err.Error()
+		res.Data = []model.WorkloadGroup{}
+		c.JSON(http.StatusInternalServerError, res)
+	}
+	res.Data = data
+	res.Message = "查询成功"
+	c.JSON(http.StatusOK, res)
 }
 
 // mapDeptToCategory 统一维护映射逻辑
@@ -72,4 +97,3 @@ func (s *WorkloadService) GetWorkloadReport(startTime, endTime string) ([]model.
 	}
 	return results, nil
 }
- 
