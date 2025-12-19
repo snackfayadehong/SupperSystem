@@ -121,10 +121,7 @@ func setupRoutes(r *gin.Engine) {
 	// API 路由组
 	router := r.Group("/api")
 	{
-		router.POST("/getWorkload", middleware.CheckTime, service.GetWorkload)
-		router.POST("/getNoAccountEntry", middleware.CheckTime, service.GetNoAccountEntry)
-		router.POST("/getUnCheckBills", middleware.CheckTime, service.GetUnCheckBills)
-		router.POST("/getNoDeliveredPurchaseSummary", middleware.CheckTime, service.GetNoDeliveredPurchaseSummary)
+		router.POST("/getWorkload", middleware.CheckTime)
 		v1 := router.Group("/v1")
 		{
 			v1.POST("/change_prod", middleware.CheckRequestProdInfo, service.ChangeProductInfoService)
