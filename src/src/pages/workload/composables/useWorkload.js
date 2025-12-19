@@ -22,11 +22,15 @@ export function useWorkload() {
      */
     const fetchList = async () => {
         loading.value = true;
+        if (!dateRange.value || dateRange.value.length < 2) {
+            ElMessage.error("请选择完整时间范围!")
+            return
+        }
         try {
             // 注意：这里对接后端聚合接口
             const res = await myAxios.post("/getWorkload", {
-                startTime: dateRange.value?.[0] ? dayjs(dateRange.value[0]).format("YYYY-MM-DD") : "",
-                endTime: dateRange.value?.[1] ? dayjs(dateRange.value[1]).format("YYYY-MM-DD") : ""
+                startTime: dateRange.value?.[0] ? dayjs(dateRange.value[0]).startOf('day').format("YYYY-MM-DD HH:mm:ss") : "",
+                endTime: dateRange.value?.[1] ? dayjs(dateRange.value[1]).endOf('day').format("YYYY-MM-DD HH:mm:ss") : ""
             });
 
             // 这里的 res 已经是 myAxios 拦截器处理后的 res.data
@@ -87,7 +91,7 @@ export function useWorkload() {
 
     // 初始化加载
     onMounted(() => {
-        fetchList();
+        // fetchList();
     });
 
     return {
