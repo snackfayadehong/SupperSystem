@@ -1,105 +1,145 @@
 <template>
     <div class="dict-compare-container">
-        <header class="tool-hero">
-            <div class="hero-left">
-                <h1 class="title">字典数据一致性审查</h1>
-                <p class="desc">跨系统字典比对工具 • 实时同步校验</p>
-            </div>
-            <div class="hero-right">
-                <div class="search-box glass-panel">
-                    <el-input v-model="keyword" placeholder="输入 材料代码 或 产品ID" class="search-input"
-                        @keyup.enter="handleCompare">
+        <section class="unified-hero-card">
+            <div class="hero-content">
+                <div class="text-area">
+                    <h1 class="hero-title">字典数据实时对比工具</h1>
+                    <p class="hero-desc">怡道系统与 HIS 系统字典信息校对</p>
+                </div>
+
+                <div class="search-area glass-effect">
+                    <el-input v-model="keyword" placeholder="请输入 14位材料代码 或 6位产品ID" class="integrated-input" clearable
+                        maxlength="14" @input="handleInput" @keyup.enter="handleCompare">
                         <template #prefix><el-icon>
                                 <Search />
                             </el-icon></template>
-                        <template #suffix><span class="mode-tag">{{ keywordType }}</span></template>
+                        <template #suffix>
+                            <el-tag :type="keywordType === '产品ID' ? 'success' : 'primary'" size="small" effect="dark"
+                                class="mode-tag">
+                                {{ keywordType }}
+                            </el-tag>
+                        </template>
                     </el-input>
-                    <el-button type="primary" :loading="loading" @click="handleCompare">立即比对</el-button>
+                    <el-button type="primary" :loading="loading" class="audit-btn" @click="handleCompare">
+                        开始对比
+                    </el-button>
                 </div>
             </div>
-        </header>
+        </section>
 
-        <el-dialog v-model="choiceVisible" title="选择匹配条目" width="800px" append-to-body destroy-on-close
-            class="custom-dialog">
-            <el-table :data="multiOptions" @row-click="confirmSelection" highlight-current-row style="cursor: pointer">
-                <el-table-column prop="ProductInfoID" label="产品 ID" width="100" />
-                <el-table-column prop="ypdm" label="编码" width="120" />
-                <el-table-column prop="tymc" label="材料名称" min-width="150" show-overflow-tooltip />
-                <el-table-column prop="ypgg" label="规格型号" min-width="150" />
-            </el-table>
+        <el-dialog v-model="choiceVisible" title="核对冲突：请确认具体条目" width="850px" append-to-body destroy-on-close
+            class="selection-dialog">
+            <div class="selection-header">
+                <el-alert title="检测到多个怡道系统产品信息" type="warning"
+                    description="该材料代码在怡道系统对应多个产品 ID，请通过下方的名称与规格进行确认，点击对应行进行对比。" show-icon :closable="false" />
+            </div>
+
+            <div class="selection-scroller">
+                <div v-for="item in multiOptions" :key="item.ProductInfoID" class="choice-card"
+                    @click="confirmSelection(item)">
+                    <div class="card-meta">
+                        <span class="meta-id">产品ID: {{ item.ProductInfoID }}</span>
+                        <span class="meta-code">材料代码：{{ item.ypdm }}</span>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="item-name">{{ item.ypmc }}</div>
+                        <div class="item-spec">{{ item.ypgg || '规格型号未维护' }}</div>
+                    </div>
+
+                    <div class="card-arrow">
+                        <el-icon>
+                            <ArrowRightBold />
+                        </el-icon>
+                    </div>
+                </div>
+            </div>
         </el-dialog>
 
-        <main v-if="compareResults.length" class="compare-workspace">
-            <div class="audit-summary glass-panel" :class="{ 'has-diff': mismatchCount > 0 }">
-                <div class="summary-item">
-                    <span class="s-label">比对项总数</span>
-                    <span class="s-value">{{ compareResults.length }}</span>
-                </div>
-                <div class="summary-divider"></div>
-                <div class="summary-item">
-                    <span class="s-label">异常差异项</span>
-                    <span class="s-value danger">{{ mismatchCount }}</span>
-                </div>
-                <div class="summary-status">
-                    <el-tag :type="mismatchCount === 0 ? 'success' : 'danger'" effect="dark" round>
-                        {{ mismatchCount === 0 ? '数据完全一致' : '检测到字段冲突' }}
+        <transition name="list-fade">
+            <div v-if="compareResults.length" class="results-container">
+                <div class="summary-bar" :class="{ 'has-mismatch': mismatchCount > 0 }">
+                    <div class="summary-left">
+                        <el-icon class="status-icon">
+                            <InfoFilled />
+                        </el-icon>
+                        <span class="summary-text">比对完成：共 {{ compareResults.length }} 项，发现 <b class="danger">{{
+                            mismatchCount
+                                }}</b> 项差异</span>
+                    </div>
+                    <el-tag :type="mismatchCount === 0 ? 'success' : 'danger'" effect="dark" class="status-pill">
+                        {{ mismatchCount === 0 ? '数据一致' : '检测到冲突' }}
                     </el-tag>
                 </div>
-            </div>
 
-            <div class="diff-list">
-                <div class="diff-header-row">
-                    <div class="col-label">属性维度</div>
-                    <div class="col-local">怡道系统记录</div>
-                    <div class="col-indicator">状态</div>
-                    <div class="col-his">HIS系统 (Result)</div>
-                </div>
-
-                <div v-for="(item, index) in compareResults" :key="item.field" class="diff-card-row"
-                    :class="{ 'is-mismatch': !item.isMatch }" :style="{ animationDelay: index * 0.05 + 's' }">
-                    <div class="col-label">
-                        <span class="field-name">{{ item.label }}</span>
-                        <span class="field-key">{{ item.field }}</span>
+                <div class="diff-view">
+                    <div class="diff-header">
+                        <div class="col-name">属性</div>
+                        <div class="col-data">怡道系统</div>
+                        <div class="col-status">状态</div>
+                        <div class="col-data">HIS 系统</div>
                     </div>
 
-                    <div class="col-local">
-                        <div class="val-display">{{ item.localValue || '未维护' }}</div>
+                    <div class="diff-card identity-row">
+                        <div class="col-name">
+                            <span class="label">产品 ID</span>
+                            <span class="key">PRODUCTINFOID</span>
+                        </div>
+                        <div class="col-data val-box identity-box">{{ currentSelection.ProductInfoID || '-' }}</div>
+                        <div class="col-status"><el-icon class="icon-match">
+                                <CircleCheckFilled />
+                            </el-icon></div>
+                        <div class="col-data val-box identity-box">{{ currentSelection.ProductInfoID || '-' }}</div>
                     </div>
 
-                    <div class="col-indicator">
-                        <el-icon v-if="item.isMatch" class="match-icon">
-                            <SuccessFilled />
-                        </el-icon>
-                        <el-icon v-else class="mismatch-icon">
-                            <WarningFilled />
-                        </el-icon>
+                    <div class="diff-card identity-row">
+                        <div class="col-name">
+                            <span class="label">材料代码</span>
+                            <span class="key">CODE</span>
+                        </div>
+                        <div class="col-data val-box identity-box">{{ currentSelection.ypdm || '-' }}</div>
+                        <div class="col-status"><el-icon class="icon-match">
+                                <CircleCheckFilled />
+                            </el-icon></div>
+                        <div class="col-data val-box identity-box">{{ currentSelection.ypdm || '-' }}</div>
                     </div>
 
-                    <div class="col-his">
-                        <div class="val-display" :title="!item.isMatch ? '建议修正为 HIS 值' : ''">
-                            {{ item.hisValue || '未返回' }}
+                    <div v-for="(item, index) in compareResults" :key="item.field" class="diff-card"
+                        :class="{ 'mismatch-card': !item.isMatch }" :style="{ animationDelay: index * 0.05 + 's' }">
+                        <div class="col-name">
+                            <span class="label">{{ item.label }}</span>
+                            <span class="key">{{ item.field.toUpperCase() }}</span>
+                        </div>
+                        <div class="col-data val-box">{{ item.localValue || '-' }}</div>
+                        <div class="col-status">
+                            <el-icon v-if="item.isMatch" class="icon-match">
+                                <CircleCheckFilled />
+                            </el-icon>
+                            <el-icon v-else class="icon-mismatch">
+                                <WarningFilled />
+                            </el-icon>
+                        </div>
+                        <div class="col-data val-box" :class="{ 'error-box': !item.isMatch }">
+                            <span class="val-text">{{ item.hisValue || '-' }}</span>
+                            <span v-if="!item.isMatch" class="error-label">冲突项</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </main>
+        </transition>
 
-        <div v-else-if="!loading && hasSearched" class="empty-state">
-            <el-empty :description="errorMsg || '未检索到比对数据'">
-                <template #extra>
-                    <p class="empty-hint">请核实编码是否存在或 HIS 是否已将其停用</p>
-                </template>
-            </el-empty>
-        </div>
+        <el-empty v-if="!loading && hasSearched && compareResults.length === 0"
+            :description="errorMsg || '未检索到该编码的比对数据'" />
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { Search, SuccessFilled, WarningFilled } from "@element-plus/icons-vue";
+import { ref, computed, h } from 'vue';
+import { Search, InfoFilled, CircleCheckFilled, WarningFilled, ArrowRightBold } from "@element-plus/icons-vue";
 import myAxios from '@/services/myAxios';
 import { ElMessage } from 'element-plus';
 
+// --- 状态定义 ---
 const keyword = ref('');
 const loading = ref(false);
 const hasSearched = ref(false);
@@ -107,307 +147,352 @@ const compareResults = ref([]);
 const errorMsg = ref('');
 const choiceVisible = ref(false);
 const multiOptions = ref([]);
+const currentSelection = ref({ ProductInfoID: '', ypdm: '' });
 
+// --- 计算属性 ---
 const keywordType = computed(() => {
-    if (!keyword.value) return '待输入';
-    return /^\d{1,6}$/.test(keyword.value) ? 'ID' : 'Code';
+    if (!keyword.value) return '产品ID/材料代码';
+    const isPureNumber = /^\d+$/.test(keyword.value);
+    return (isPureNumber && parseInt(keyword.value) <= 2147483647) ? '产品ID' : '材料代码';
 });
 
-const mismatchCount = computed(() =>
-    compareResults.value.filter(item => !item.isMatch).length
-);
+const mismatchCount = computed(() => {
+    return (compareResults.value || []).filter(item => item && !item.isMatch).length;
+});
 
-let msgInstance = null; // 消息实体
-let warnCount = 0; // 警告计数
-let resetTimer = null; // 计时器
+// --- 逻辑函数 ---
+const handleInput = (val) => {
+    keyword.value = val.replace(/[^a-zA-Z0-9]/g, '');
+};
+
+let msgInstance = null;
+let warnCount = 0;
+let resetTimer = null;
+
 const handleCompare = async () => {
     if (!keyword.value) {
         warnCount = Math.min(warnCount + 1, 99);
-
-        const tipContent = h(
-            'div',
-            {
-                style: 'display: flex; align-items: center; gap: 8px;'
-            },
-            [
-                h(
-                    'span',
-                    null,
-                    warnCount > 1 ? '请勿重复点击！' : '请输入要比对的编码或 ID'
-                ),
-                warnCount > 1
-                    ? h(
-                        'span',
-                        {
-                            style: `
-                              background: #f56c6c;
-                              color: #fff;
-                              padding: 0 6px;
-                              border-radius: 10px;
-                              font-size: 10px;
-                              height: 16px;
-                              line-height: 16px;
-                          `
-                        },
-                        warnCount
-                    )
-                    : null
-            ]
-        );
-
-        // 如果已有 message，先关闭
-        if (msgInstance) {
-            msgInstance.close();
-        }
-
-        msgInstance = ElMessage({
-            message: tipContent,
-            type: 'warning',
-            duration: 2000
-        });
-        // 3秒后如果没有再次点击，自动清零计数，下次点击重新从“请输入”开始
+        const tipContent = h('div', { style: 'display: flex; align-items: center; gap: 8px;' }, [
+            h('span', null, warnCount > 1 ? '请勿重复点击！' : '请输入对账关键字'),
+            warnCount > 1 ? h('span', { class: 'singleton-badge' }, warnCount) : null
+        ]);
+        if (msgInstance) msgInstance.close();
+        msgInstance = ElMessage({ message: tipContent, type: 'warning' });
         clearTimeout(resetTimer);
-        resetTimer = setTimeout(() => {
-            warnCount = 0;
-        }, 3000);
-
+        resetTimer = setTimeout(() => { warnCount = 0; }, 3000);
         return;
     }
+
     loading.value = true;
     compareResults.value = [];
     hasSearched.value = true;
 
+
     try {
         const res = await myAxios.post('/dict/compare', { keyword: keyword.value });
         if (res.code === 201) {
-            multiOptions.value = res.data;
+            multiOptions.value = res.data || [];
             choiceVisible.value = true;
         } else if (res.code === 0) {
-            compareResults.value = res.data;
+            compareResults.value = Array.isArray(res.data.results) ? res.data.results : [];
+            currentSelection.value = {
+                ProductInfoID: res.data.ProductInfoID,
+                ypdm: res.data.ypdm
+            };
+            console.log('比对结果：', currentSelection.value);
         } else {
             errorMsg.value = res.message;
         }
     } catch (err) {
-        errorMsg.value = '通信异常';
+        errorMsg.value = '连接 HIS 接口异常';
     } finally {
         loading.value = false;
     }
 };
 
 const confirmSelection = (row) => {
-    keyword.value = row.ProductInfoID;
+    currentSelection.value = { ProductInfoID: row.ProductInfoID, ypdm: row.ypdm };
+    keyword.value = row.ProductInfoID.toString();
     choiceVisible.value = false;
     handleCompare();
 };
 </script>
 
 <style scoped>
+/* 1. 基础布局 & Hero 卡片 */
 .dict-compare-container {
-    padding: 30px;
-    background-color: #f8fafc;
+    padding: 24px;
+    background-color: #f5f7fa;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
 }
 
-/* Hero 布局优化 */
-.tool-hero {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.unified-hero-card {
     padding: 40px;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     border-radius: 24px;
     color: white;
+    box-shadow: 0 12px 24px rgba(79, 172, 254, 0.2);
 }
 
-.title {
+.hero-content {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.hero-title {
     font-size: 28px;
     font-weight: 800;
     margin: 0;
-    letter-spacing: 1px;
 }
 
-.desc {
-    margin: 8px 0 0;
-    opacity: 0.6;
-    font-size: 14px;
+.hero-desc {
+    font-size: 15px;
+    opacity: 0.9;
+    margin: 10px 0 30px;
 }
 
-.search-box {
+.glass-effect {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 12px;
+    border-radius: 16px;
     display: flex;
     gap: 12px;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.mode-tag {
-    font-size: 12px;
-    color: #38bdf8;
-    font-weight: bold;
-    padding: 0 8px;
+.integrated-input {
+    flex: 1;
 }
 
-/* 汇总状态栏 */
-.audit-summary {
+:deep(.el-input__wrapper) {
+    border-radius: 10px;
+    padding: 0 15px;
+}
+
+/* 2. 多项目选择弹窗美化 */
+.selection-scroller {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    /* 增加条目间距 */
+    margin-top: 10px;
+}
+
+.choice-card {
     display: flex;
     align-items: center;
-    padding: 20px 30px;
-    margin-bottom: 20px;
-    border-left: 5px solid #64748b;
+    padding: 20px 25px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.audit-summary.has-diff {
-    border-left-color: #ef4444;
-    background: #fef2f2 !important;
+.choice-card:hover {
+    transform: translateX(10px);
+    border-color: #4facfe;
+    background: #f0f9ff;
 }
 
-.summary-item {
+.card-meta {
+    width: 150px;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    border-right: 1px solid #edf2f7;
+    margin-right: 20px;
 }
 
-.s-label {
+.meta-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    color: #409eff;
+    font-size: 17px;
+}
+
+.meta-code {
     font-size: 12px;
     color: #94a3b8;
 }
 
-.s-value {
+.card-body {
+    flex: 1;
+}
+
+.item-name {
+    font-weight: 800;
+    color: #1e293b;
+    font-size: 16px;
+}
+
+.item-spec {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* 3. 比对结果区核心优化 */
+.results-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.summary-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 16px 25px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border-left: 6px solid #409eff;
+}
+
+.summary-bar.has-mismatch {
+    border-left-color: #f56c6c;
+    background: #fffbfa;
+}
+
+.summary-text {
+    font-weight: bold;
+    color: #475569;
+}
+
+.danger {
+    color: #f56c6c;
     font-size: 20px;
+    margin: 0 4px;
+}
+
+.status-pill {
+    font-weight: 900;
+    padding: 0 14px;
+}
+
+/* 扁平化对齐表头并设置居中 */
+.diff-header {
+    display: grid;
+    grid-template-columns: 180px 1fr 100px 1fr;
+    padding: 0 24px 12px;
+    font-size: 13px;
+    color: #3966a5;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* 居中比对系统的标题 */
+.diff-header .col-data {
+    text-align: center;
+    font-size: 20px;
+}
+
+.diff-header .col-status {
+    text-align: center;
+}
+
+.diff-card {
+    display: grid;
+    grid-template-columns: 180px 1fr 100px 1fr;
+    align-items: center;
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+/* 身份标识行特殊样式 */
+.identity-row {
+    background: #f0f7ff;
+    border-left: 4px solid #38bdf8;
+}
+
+.identity-box {
+    background: #e6f1fe !important;
+    color: #0284c7 !important;
     font-weight: 800;
 }
 
-.s-value.danger {
-    color: #ef4444;
+.diff-card.mismatch-card {
+    border: 1px solid #ffccc7;
+    background: #fffbfa;
 }
 
-.summary-divider {
-    width: 1px;
-    height: 30px;
-    background: #e2e8f0;
-    margin: 0 30px;
-}
-
-.summary-status {
-    margin-left: auto;
-}
-
-/* 镜像对比列表 */
-.diff-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.diff-header-row {
-    display: grid;
-    grid-template-columns: 200px 1fr 80px 1fr;
-    padding: 10px 20px;
-    color: #94a3b8;
-    font-size: 13px;
-    font-weight: bold;
-}
-
-.diff-card-row {
-    display: grid;
-    grid-template-columns: 200px 1fr 80px 1fr;
-    align-items: center;
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease;
-    animation: slideIn 0.5s ease backwards;
-}
-
-.diff-card-row:hover {
-    transform: scale(1.01);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.diff-card-row.is-mismatch {
-    border: 1px solid #fecaca;
-    background: #fffafb;
-}
-
-.field-name {
+/* 属性标签增强 */
+.label {
+    font-weight: 900;
+    color: #1e293b;
     display: block;
-    font-weight: 700;
-    color: #334155;
+    font-size: 18px;
+    /* 加大字段名 */
+    margin-bottom: 2px;
 }
 
-.field-key {
-    font-size: 11px;
-    color: #94a3b8;
-    font-family: monospace;
+.key {
+    font-size: 12px;
+    color: #3074c7;
+    font-family: 'JetBrains Mono', monospace;
 }
 
-.val-display {
-    font-family: 'JetBrains Mono', 'Monaco', monospace;
+.val-box {
+    padding: 14px 20px;
+    background: #f8fafc;
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
     font-size: 15px;
     font-weight: 600;
     color: #475569;
-    word-break: break-all;
 }
 
-.is-mismatch .col-his .val-display {
-    color: #ef4444;
-    text-decoration: underline;
+/* 冲突高亮 */
+.error-box {
+    background: #fff1f0;
+    color: #ff4d4f;
+    position: relative;
+    border: 1px dashed #ffa39e;
 }
 
-.col-indicator {
+.error-label {
+    position: absolute;
+    top: -10px;
+    right: 10px;
+    background: #ff4d4f;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 900;
+    box-shadow: 0 2px 6px rgba(255, 77, 79, 0.2);
+}
+
+.col-status {
     display: flex;
     justify-content: center;
+    font-size: 26px;
 }
 
-.match-icon {
-    color: #22c55e;
-    font-size: 24px;
+.icon-match {
+    color: #52c41a;
 }
 
-.mismatch-icon {
-    color: #ef4444;
-    font-size: 24px;
-    animation: pulse 2s infinite;
+.icon-mismatch {
+    color: #ff4d4f;
+    filter: drop-shadow(0 0 4px rgba(255, 77, 79, 0.2));
 }
 
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(1.1);
-        opacity: 0.7;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-:global(html.dark) .diff-card-row {
-    background: #1e293b;
-}
-
-:global(html.dark) .val-display {
-    color: #cbd5e1;
+.singleton-badge {
+    background: #f56c6c;
+    color: #fff;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 10px;
 }
 </style>
