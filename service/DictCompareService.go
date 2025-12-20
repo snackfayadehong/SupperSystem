@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,9 +33,24 @@ func (s *DictCompareService) HandleCompareRequest(c *gin.Context) {
 		res.Message = "参数解析失败"
 		c.JSON(http.StatusOK, res)
 	}
-
+	// 分流
+	kLen := len(req.Keyword)
+	if kLen != 6 && kLen != 14 {
+		res.Code = 1
+		res.Message = "材料代码或产品ID不正确"
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	_, err := strconv.Atoi(req.Keyword)
+	if err != nil {
+		res.Code = 1
+		res.Message = "非法字符串!"
+		c.JSON(http.StatusOK, res)
+		return
+	}
+	isIdQuery := kLen == 6
 	// 1. 获取本地记录列表 (对应 Controller 返回的 *[]model.LocalDictRow)
-	locals, err := s.ctrl.GetLocalDictInfo(req.Keyword)
+	locals, err := s.ctrl.GetLocalDictInfo(req.Keyword, isIdQuery)
 
 	// 判断是否找到数据
 	if err != nil || locals == nil || len(locals) == 0 {
@@ -63,7 +79,11 @@ func (s *DictCompareService) HandleCompareRequest(c *gin.Context) {
 		return
 	}
 
-	res.Data = results
+	res.Data = gin.H{
+		"ProductInfoID": locals[0].ProductInfoID,
+		"ypdm":          locals[0].Ypdm,
+		"results":       results,
+	}
 	res.Message = msg
 	c.JSON(http.StatusOK, res)
 }
@@ -152,3 +172,98 @@ func (s *DictCompareService) getReflectVal(data *model.LocalDictRow, key string)
 		return ""
 	}
 }
+
+//// 测试
+//func (s *DictCompareService) CompareDictDataCs(local *model.LocalDictRow) ([]model.DictCompareResult, string, error) {
+//	// --- 测试模式：模拟 HIS 接口返回数据 ---
+//	mockHisJson := `{
+//    "users": [
+//        {
+//            "lbdm": "09",
+//            "sfwjkcl": false,
+//            "ydcldm": null,
+//            "sccjdm": "0487",
+//            "pym2": null,
+//            "ypbm2": null,
+//            "yppp": "新华",
+//            "kfpfj": 101.4000,
+//            "sfwwhp1": null,
+//            "ypzczh_xq": 1788192000000,
+//            "kfzhl": 1,
+//            "tymc": "脑压板",
+//            "kfcgj": 101.4000,
+//            "cljflx": "0",
+//            "kfdm": "2095",
+//            "gnzdl": null,
+//            "sccj": "新华手术器械有限公司",
+//            "ypbwm": null,
+//            "lsh": null,
+//            "ypzczh": "鲁械注准20172030213",
+//            "zxzhl": 1,
+//            "kfdw": "件        ",
+//            "pym1": null,
+//            "lrrq": 1647477919907,
+//            "zjm": "NYB            ",
+//            "jxbm": "15",
+//            "cctj": null,
+//            "yplb": "030103    ",
+//            "ypbz": "",
+//            "bz": "名称：caiwu2;IP:172.21.67.5",
+//            "ypmc": "脑压板",
+//            "ypdm": "03010200004155",
+//            "kflsj": 101.4000,
+//            "gsdm": "1022",
+//            "sybz": "1",
+//            "ypgg": "ZF448RG,200×5×3",
+//            "zxlsj": 101.4000,
+//            "pym": "               ",
+//            "ghdw": "四川康瑞克医疗器材有限公司",
+//            "zxcgj": 101.4000,
+//            "ypbm": "                              ",
+//            "zxdw": "件      ",
+//            "ypbm1": null
+//        }
+//    ]
+//}`
+//
+//	var hisRes Interface.HisDictResponse
+//	if err := json.Unmarshal([]byte(mockHisJson), &hisRes); err != nil {
+//		return nil, "", fmt.Errorf("测试数据解析失败: %v", err)
+//	}
+//	// 3. 停用判断
+//	if len(hisRes.Users) == 0 {
+//		return nil, "HIS系统未找到该材料或已停用", nil
+//	}
+//	his := hisRes.Users[0]
+//
+//	// 4. 定义对比规则（确保 Key 与 hisres.json 中的字段一致）
+//	checkFields := []struct {
+//		Label string
+//		Key   string
+//	}{
+//		{"产品名称", "ypmc"}, // 对应 "tymc": "脑压板"
+//		{"规格型号", "ypgg"}, // 对应 "ypgg": "脑压板"
+//		{"库房单位", "kfdw"}, // 对应 "kfdw": "件        "
+//		{"采购价", "kfcgj"}, // 对应 "kfcgj": 101.4000
+//		{"库房代码", "kfdm"}, // 对应 "kfdm": "2095"
+//		{"公司代码", "gsdm"},
+//	}
+//
+//	// 5. 执行对比
+//	var results []model.DictCompareResult
+//	for _, f := range checkFields {
+//		localVal := s.getReflectVal(local, f.Key)
+//		hisVal := his[f.Key]
+//
+//		results = append(results, model.DictCompareResult{
+//			Label:      f.Label,
+//			Field:      f.Key,
+//			LocalValue: localVal,
+//			HisValue:   hisVal,
+//			// 重点：使用 fmt.Sprintf 消除 float64 精度差异（如 101.4000 与 101.4）
+//			IsMatch: fmt.Sprintf("%v", localVal) == fmt.Sprintf("%v", hisVal),
+//		})
+//	}
+//
+//	return results, "测试比对完成 (Mock 数据)", nil
+//}

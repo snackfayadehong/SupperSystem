@@ -3,13 +3,11 @@ package controller
 import (
 	clientDb "WorkloadQuery/db"
 	"WorkloadQuery/model"
-	"fmt"
-	"strconv"
 )
 
 type DictCompareController struct{}
 
-func (ctrl *DictCompareController) GetLocalDictInfo(keyword string) ([]model.LocalDictRow, error) {
+func (ctrl *DictCompareController) GetLocalDictInfo(keyword string, isIdQuery bool) ([]model.LocalDictRow, error) {
 	var rows []model.LocalDictRow // 修改点 2：变量名复数化
 
 	// ypgg 的 CASE 逻辑片段
@@ -29,19 +27,12 @@ func (ctrl *DictCompareController) GetLocalDictInfo(keyword string) ([]model.Loc
 		Joins("LEFT JOIN TB_SpecUnit MO ON MO.SpecID = A.Model").
 		Joins("LEFT JOIN TB_SpecUnit SP ON SP.SpecID = A.Specification")
 
-	// 1. 尝试将关键字转化为数字
-	_, err := strconv.Atoi(keyword)
-	if err == nil {
-		// 根据keyword长度 判断查询 ProductInfoID 还是Code
-		if len(keyword) <= 6 {
-			query = query.Where("A.ProductInfoID = ?", keyword)
-		} else {
-			query = query.Where("A.Code = ?", keyword)
-		}
-	} else {
-		return nil, fmt.Errorf("非法字符")
+	if isIdQuery {
+		query = query.Where("A.ProductInfoID = ?", keyword)
+	} else { // 14位
+		query = query.Where("A.Code = ?", keyword)
 	}
-	err = query.Order("A.ProductInfoID").Find(&rows).Error
+	err := query.Order("A.ProductInfoID").Find(&rows).Error
 	if err != nil {
 		return nil, err
 	}
