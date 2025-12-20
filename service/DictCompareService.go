@@ -100,7 +100,7 @@ func (s *DictCompareService) CompareDictData(local *model.LocalDictRow) ([]model
 		Label string
 		Key   string
 	}{
-		{"通用名", "ypmc"},
+		{"产品名称", "ypmc"},
 		{"规格型号", "ypgg"},
 		{"库房单位", "kfdw"},
 		{"采购价", "kfcgj"},
@@ -132,7 +132,7 @@ func (s *DictCompareService) CompareDictData(local *model.LocalDictRow) ([]model
 // getReflectVal 辅助方法
 func (s *DictCompareService) getReflectVal(data *model.LocalDictRow, key string) interface{} {
 	switch key {
-	case "tymc":
+	case "ypmc":
 		return data.Ypmc
 	case "ypgg":
 		return data.Ypgg

@@ -4,7 +4,7 @@ package model
 type LocalDictRow struct {
 	Ypdm          string  `gorm:"column:ypdm" json:"ypdm"` // 别名 a.Code
 	ProductInfoID string  `gorm:"column:ProductInfoID" json:"ProductInfoID"`
-	Ypmc          string  `gorm:"column:ypmc" json:"ypmc"`   // 通用名
+	Ypmc          string  `gorm:"column:ypmc" json:"ypmc"`   // 产品名称
 	Ypgg          string  `gorm:"column:ypgg" json:"ypgg"`   // 规格
 	Kfdw          string  `gorm:"column:kfdw" json:"kfdw"`   // 单位
 	Kfcgj         float64 `gorm:"column:kfcgj" json:"kfcgj"` // 采购价
