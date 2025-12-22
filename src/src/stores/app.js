@@ -6,7 +6,7 @@ export const useAppStore = defineStore('app', {
     // 侧边栏折叠状态
     isCollapse: false,
     // 系统标题
-    systemTitle: 'WorkloadQuery',
+    systemTitle: 'SupperSystem',
     // 当前系统状态: 'ok' | 'warn' | 'error'
     systemStatus: 'ok'
   }),

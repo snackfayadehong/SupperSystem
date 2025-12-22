@@ -114,7 +114,7 @@ func setupRoutes(r *gin.Engine) {
 		c.JSONP(http.StatusOK, gin.H{
 			"status":    "healthy",
 			"timestamp": time.Now().Unix(),
-			"service":   "WorkloadQuery",
+			"service":   "SupperSystem",
 		})
 	})
 
