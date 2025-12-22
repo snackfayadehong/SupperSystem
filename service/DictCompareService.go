@@ -5,12 +5,17 @@ import (
 	"WorkloadQuery/controller"
 	http2 "WorkloadQuery/http"
 	"WorkloadQuery/model"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 )
 
 // DictCompareServiceInstance 导出单例实例
@@ -96,16 +101,30 @@ func (s *DictCompareService) CompareDictData(local *model.LocalDictRow) ([]model
 	// 使用已经查出的 local.Ypdm 构造请求
 	icuReq := &Interface.HisIcuRequest{
 		Url:     "http://172.21.1.140:8083/integration_inter_icu/wlxt_mis_proc_cx_ypdm",
-		ReqData: map[string]string{"ypdm": local.Ypdm},
+		ReqData: map[string]string{"xmbh": local.Ypdm},
 	}
-
 	respBytes, err := icuReq.CallHisIcuApi()
 	if err != nil {
 		return nil, "", fmt.Errorf("HIS接口调用失败: %v", err)
 	}
-
+	// 转utf8
+	utf8Bytes, err := GbkToUtf8(respBytes)
+	if err != nil {
+		utf8Bytes = respBytes
+	}
+	// 清理 "\"
+	cleanStr := string(utf8Bytes)
+	cleanStr = strings.ReplaceAll(cleanStr, "\\", "\\\\")
+	// 还原被过度转义的引号
+	cleanStr = strings.ReplaceAll(cleanStr, "\\\\\"", "\\\"")
+	// 处理末尾可能存在的垃圾字符（截取到最后一个 '}'）
+	lastBrace := strings.LastIndex(cleanStr, "}")
+	if lastBrace == -1 {
+		cleanStr = cleanStr[:lastBrace+1]
+	}
 	var hisRes Interface.HisDictResponse
-	if err := json.Unmarshal(respBytes, &hisRes); err != nil {
+	fmt.Printf("%s", cleanStr)
+	if err := json.Unmarshal([]byte(cleanStr), &hisRes); err != nil {
 		return nil, "", fmt.Errorf("HIS解析失败: %v", err)
 	}
 
@@ -133,9 +152,18 @@ func (s *DictCompareService) CompareDictData(local *model.LocalDictRow) ([]model
 	// 4. 执行对比并组装结果
 	var results []model.DictCompareResult
 	for _, f := range checkFields {
-		localVal := s.getReflectVal(local, f.Key)
-		hisVal := his[f.Key]
-
+		rawLocal := s.getReflectVal(local, f.Key)
+		RawHis := his[f.Key]
+		// 清洗首位空格
+		localVal := strings.TrimSpace(fmt.Sprintf("%v", rawLocal))
+		hisVal := strings.TrimSpace(fmt.Sprintf("%v", RawHis))
+		// null值处理
+		if localVal == "<nil>" {
+			localVal = ""
+		}
+		if hisVal == "<nil>" {
+			hisVal = ""
+		}
 		results = append(results, model.DictCompareResult{
 			Label:      f.Label,
 			Field:      f.Key,
@@ -173,6 +201,48 @@ func (s *DictCompareService) getReflectVal(data *model.LocalDictRow, key string)
 	}
 }
 
+func GbkToUtf8(s []byte) ([]byte, error) {
+	reader := transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
+	d, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// CleanHISJson 智能清洗 HIS 接口返回的“脏”数据
+func CleanHISJson(raw []byte) []byte {
+	// 1. 处理斜杠：只转义后面不是合法转义字符的斜杠
+	// 我们先将已有的合法转义占位，防止被误伤
+	s := string(raw)
+	s = strings.ReplaceAll(s, "\\\"", "###QUOTE###") // 保护 \"
+	s = strings.ReplaceAll(s, "\\n", "###N###")      // 保护 \n
+	s = strings.ReplaceAll(s, "\\r", "###R###")      // 保护 \r
+	s = strings.ReplaceAll(s, "\\t", "###T###")      // 保护 \t
+
+	// 2. 将剩下的单斜杠全部转义为双斜杠
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+
+	// 3. 还原保护的字符
+	s = strings.ReplaceAll(s, "###QUOTE###", "\\\"")
+	s = strings.ReplaceAll(s, "###N###", "\\n")
+	s = strings.ReplaceAll(s, "###R###", "\\r")
+	s = strings.ReplaceAll(s, "###T###", "\\t")
+
+	// 4. 【关键】处理末尾垃圾字符：截取到最后一个 '}' 或 ']'
+	lastBrace := strings.LastIndex(s, "}")
+	lastBracket := strings.LastIndex(s, "]")
+	endIdx := lastBrace
+	if lastBracket > endIdx {
+		endIdx = lastBracket
+	}
+	if endIdx != -1 {
+		s = s[:endIdx+1]
+	}
+
+	return []byte(s)
+}
+
 //// 测试
 //func (s *DictCompareService) CompareDictDataCs(local *model.LocalDictRow) ([]model.DictCompareResult, string, error) {
 //	// --- 测试模式：模拟 HIS 接口返回数据 ---
@@ -181,46 +251,46 @@ func (s *DictCompareService) getReflectVal(data *model.LocalDictRow, key string)
 //        {
 //            "lbdm": "09",
 //            "sfwjkcl": false,
-//            "ydcldm": null,
-//            "sccjdm": "0487",
+//            "ydcldm": "1770293273",
+//            "sccjdm": "1825",
 //            "pym2": null,
 //            "ypbm2": null,
-//            "yppp": "新华",
-//            "kfpfj": 101.4000,
+//            "yppp": "浙江新亚医疗科技股份",
+//            "kfpfj": 30.0000,
 //            "sfwwhp1": null,
-//            "ypzczh_xq": 1788192000000,
+//            "ypzczh_xq": 1826812800000,
 //            "kfzhl": 1,
-//            "tymc": "脑压板",
-//            "kfcgj": 101.4000,
-//            "cljflx": "0",
+//            "tymc": "口外正畸牵引装置",
+//            "kfcgj": 30.0000,
+//            "cljflx": "1",
 //            "kfdm": "2095",
-//            "gnzdl": null,
-//            "sccj": "新华手术器械有限公司",
-//            "ypbwm": null,
-//            "lsh": null,
-//            "ypzczh": "鲁械注准20172030213",
+//            "gnzdl": "",
+//            "sccj": "浙江新亚医疗科技股份有限公司",
+//            "ypbwm": "C07110914800003041210000007",
+//            "lsh": "/",
+//            "ypzczh": "浙械注准20172171224",
 //            "zxzhl": 1,
-//            "kfdw": "件        ",
+//            "kfdw": "套        ",
 //            "pym1": null,
-//            "lrrq": 1647477919907,
-//            "zjm": "NYB            ",
-//            "jxbm": "15",
-//            "cctj": null,
-//            "yplb": "030103    ",
-//            "ypbz": "",
+//            "lrrq": 1744078711000,
+//            "zjm": "kwzjqyzz       ",
+//            "jxbm": "17",
+//            "cctj": "常温",
+//            "yplb": "0305      ",
+//            "ypbz": "副",
 //            "bz": "名称：caiwu2;IP:172.21.67.5",
-//            "ypmc": "脑压板",
-//            "ypdm": "03010200004155",
-//            "kflsj": 101.4000,
-//            "gsdm": "1022",
+//            "ypmc": "口外正畸牵引装置",
+//            "ypdm": "03050000003951",
+//            "kflsj": 30.0000,
+//            "gsdm": "1877",
 //            "sybz": "1",
-//            "ypgg": "ZF448RG,200×5×3",
-//            "zxlsj": 101.4000,
-//            "pym": "               ",
-//            "ghdw": "四川康瑞克医疗器材有限公司",
-//            "zxcgj": 101.4000,
-//            "ypbm": "                              ",
-//            "zxdw": "件      ",
+//            "ypgg": "J型钩|轻力型-Ⅱ型  65mm          2*1",
+//            "zxlsj": 30.0000,
+//            "pym": "kwzjqyzz       ",
+//            "ghdw": "成都登思特医疗器械有限公司",
+//            "zxcgj": 30.0000,
+//            "ypbm": "口外正畸牵引装置              ",
+//            "zxdw": "套      ",
 //            "ypbm1": null
 //        }
 //    ]
