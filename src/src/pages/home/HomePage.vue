@@ -6,7 +6,7 @@
                 <p class="date-text">{{ currentTime.format("YYYY年MM月DD日 dddd HH:mm:ss") }}</p>
                 <div class="system-status-pill">
                     <span class="pulse-dot"></span>
-                    后端 Go 服务：已连接 (172.21.1.75)
+                    后端服务：已连接
                 </div>
             </div>
         </header>

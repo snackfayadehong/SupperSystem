@@ -31,9 +31,10 @@ export default defineConfig({
         open: false // 启动后自动打开浏览器
     },
     build: {
-        sourcemap: true, // 生产环境禁用 source map 提高构建速度
+        sourcemap: false, // 生产环境禁用 source map 提高构建速度
         outDir: "dist",
         reportCompressedSize: false, // 禁用大小报告，提高构建速度
+        chunkSizeWarningLimit: 1000,
         rollupOptions: {
             output: {
                 // 优化：更加细致的代码分割
