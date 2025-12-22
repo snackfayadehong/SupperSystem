@@ -5,8 +5,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"go.uber.org/zap"
 	"os"
+
+	"go.uber.org/zap"
 )
 
 // GenerateRSAKey 生成RSA私钥和公钥，保存到文件中
