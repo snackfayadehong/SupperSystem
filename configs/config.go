@@ -11,6 +11,8 @@ import (
 	"io"
 	"os"
 	"path/filepath" // 引入 filepath 包
+
+	"go.uber.org/zap"
 )
 
 var Configs *Config
@@ -66,11 +68,17 @@ func InitSetting(rootPath string) error {
 
 // writeEncryptionPwd 读取配置文件密码加密后重新写入配置文件
 func writeEncryptionPwd(rootPath string) error {
-	// 1. 生成公钥密钥文件
-	encry.GenerateRSAKey(2048)
 
-	// 2. 读取公钥文件 (假设存放在 configs 目录下)
-	pubKeyPath := filepath.Join(rootPath, "encry", "public.pem")
+	// 秘钥统一存在 configs 目录下
+	keyDir := filepath.Join(rootPath, "configs")
+	// 1. 生成公钥密钥文件
+	if err := encry.GenerateRSAKey(keyDir, 2048); err != nil {
+		zap.L().Error("encrypt rsa failed", zap.Error(err))
+		return err
+	}
+
+	// 2. 读取公钥文件
+	pubKeyPath := filepath.Join(keyDir, "public.pem")
 	file, err := os.Open(pubKeyPath)
 	if err != nil {
 		return err
