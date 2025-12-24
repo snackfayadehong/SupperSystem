@@ -13,6 +13,7 @@ encry/public.pem
 node_modules
 dist
 dist-ssr
+dist_release
 *.local
 src/node_modules
 src/.vscode
