@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 )
 
 type RefundRequestInfo struct {
@@ -34,7 +33,7 @@ func (r *RefundRequestInfo) processSingleRefund(raw model.RefundNo) error {
 		Url:     integration.BaseUrl + "herp-clrkgl/1.0",
 		ReqData: data,
 	}
-	// 发送HTTP请求
+	// 发送  HTTP 请求
 	res, err := k.KLBRHttpPost()
 	if err != nil {
 		return fmt.Errorf("HTTP请求失败: %w", err)
@@ -76,9 +75,13 @@ func (r *RefundRequestInfo) processSingleRefund(raw model.RefundNo) error {
 			tx.Rollback()
 		}
 	}()
-	if db := tx.Exec(clientDb.UpdateRefund_Sql, raw.Yddh); db.Error != nil {
+	//if db := tx.Exec(clientDb.UpdateRefund_Sql, raw.Yddh); db.Error != nil {
+	//	tx.Rollback()
+	//	return fmt.Errorf("更新数据库失败: %w", db.Error)
+	//}
+	if err := tx.Table("TB_Refund").Where("RetWarhouCode = ?", raw.Yddh).Update("SendStatus", 1).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("更新数据库失败: %w", db.Error)
+		return fmt.Errorf("更新数据失败: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return err.Error
@@ -108,13 +111,13 @@ func (r *RefundRequestInfo) RetryRefundToHis() (err error) {
 	logger.AsyncLog(logMsg)
 	return nil
 }
-func (r *RefundRequestInfo) GetRefundNo() (err error) {
-	var now = time.Now()
-	s := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()) // 当天0时0点
-	e := now.Add(-10 * time.Minute)                                                // 当前时间前推10分钟
-	startDate := s.Format("2006-01-02 15:04:05")
-	endDate := e.Format("2006-01-02 15:04:05")
-	db := clientDb.DB.Raw(clientDb.QueryRefundBillno, startDate, endDate).Find(&r.Re)
+func (r *RefundRequestInfo) GetRefundNo(startDate, endDate string) (err error) {
+	//db := clientDb.DB.Raw(clientDb.QueryRefundBillno, startDate, endDate).Find(&r.Re)
+	db := clientDb.DB.Table("TB_Refund").Select("RetWarhouCode as yddh,'02' as rkfs").
+		Where("ISNULL(SendStatus,?) = ?", "", "").
+		Where("Status = ?", 51).
+		Where("CreateTime >= ? And CreateTime < ?", startDate, endDate).
+		Find(&r.Re)
 	if db.Error != nil {
 		return db.Error
 	}

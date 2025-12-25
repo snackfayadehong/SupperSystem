@@ -4,6 +4,7 @@ import (
 	"SupperSystem/internal/controller"
 	"SupperSystem/pkg/logger"
 	"fmt"
+	"time"
 )
 
 // RefundRetryService 退库单重试
@@ -12,7 +13,12 @@ func RefundRetryService() {
 	r := controller.RefundRequestInfo{
 		Count: new(int64),
 	}
-	err := r.GetRefundNo()
+	var now = time.Now()
+	s := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()) // 当天0时0点
+	e := now.Add(-10 * time.Minute)                                                // 当前时间前推10分钟
+	startDate := s.Format("2006-01-02 15:04:05")
+	endDate := e.Format("2006-01-02 15:04:05")
+	err := r.GetRefundNo(startDate, endDate)
 	if err != nil {
 		return
 	}

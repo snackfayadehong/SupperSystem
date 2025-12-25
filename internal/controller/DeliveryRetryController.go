@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 )
 
 // DeliveryRequestInfo 接口入参
@@ -82,9 +81,15 @@ func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error 
 	}()
 	hisCkdh := fhxx.Ckdh
 
-	if db := tx.Exec(clientDb.UpdateDelivery_Sql, hisCkdh, deliveryid, raw.DetailSort); db.Error != nil {
+	//if db := tx.Exec(clientDb.UpdateDelivery_Sql, hisCkdh, deliveryid, raw.DetailSort); db.Error != nil {
+	//	tx.Rollback()
+	//	return fmt.Errorf("更新数据库失败: %w", db.Error)
+	//}
+	if err := tx.Table("TB_DeliveryApplyDetailRecord").
+		Where("DeliveryId = ? AND DetailSort = ?", deliveryid, raw.DetailSort).
+		Update("OutNumber", hisCkdh).Error; err != nil {
 		tx.Rollback()
-		return fmt.Errorf("更新数据库失败: %w", db.Error)
+		return fmt.Errorf("更新数据库失败:%w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return err.Error
@@ -115,13 +120,20 @@ func (d *DeliveryRequestInfo) DeliveryNoRetryToHis() (err error) {
 	return nil
 }
 
-func (d *DeliveryRequestInfo) GetDeliveryNo() (err error) {
-	var now = time.Now()
-	s := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()) // 当天0时0点
-	e := now.Add(-10 * time.Minute)                                                // 当前时间前推10分钟
-	startDate := s.Format("2006-01-02 15:04:05")
-	endDate := e.Format("2006-01-02 15:04:05")
-	db := clientDb.DB.Raw(clientDb.QueryBillNo, startDate, endDate).Find(&d.De)
+func (d *DeliveryRequestInfo) GetDeliveryNo(startDate, endDate string) (err error) {
+	db := clientDb.DB.Table("TB_DeliveryApplyDetailRecord As dr").
+		Select("'01' AS ckfs, d.DeliveryID AS ckdh, dr.DetailSort AS detailSort").
+		Joins("JOIN TB_DeliveryApply d on dr.DeliveryID = d.DeliveryID").
+		Where("dr.IsVoid = ?", 0).
+		Where("d.Source = ?", "1").
+		Where("d.IsStockGoods = ?", "0").
+		Where("d.Type = ?", "1").
+		Where("d.Status IN ?", []int{61, 71, 41, 81, 22, 91, 19, 29, 99}).
+		Where("(d.IsStockGoods <> '1' OR d.IsStockGoods IS NULL)").
+		Where("ISNULL(dr.OutNumber, '') = ?", "").
+		Where("dr.UpdateTime >= ? AND dr.UpdateTime <= ?", startDate, endDate).
+		Group("dr.DetailSort, d.DeliveryID").
+		Find(&d.De)
 	if db.Error != nil {
 		return db.Error
 	}
