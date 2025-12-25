@@ -130,6 +130,11 @@ func setupRoutes(r *gin.Engine) {
 		{
 			v1.POST("/change_prod", middleware.CheckRequestProdInfo, service.ChangeProductInfoService)
 		}
+		retry := router.Group("/retry")
+		{
+			retry.POST("/list", middleware.CheckTime, service.HandleRetryList) // 获取失败列表
+			retry.POST("/execute")                                             // 执行重试动作
+		}
 	}
 }
 

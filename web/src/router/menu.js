@@ -1,5 +1,6 @@
 // src/router/menu.js
-import {Collection, DataAnalysis, House, Menu, Tools} from "@element-plus/icons-vue";
+import { Collection, DataAnalysis, House, Menu, Tools } from "@element-plus/icons-vue";
+import { inc } from "nprogress";
 
 export default [
     {
@@ -15,21 +16,27 @@ export default [
         component: "workload/WorkloadPage"
     },
     {
-        path: '/tools',
-        label: '辅助工具',    // 统一使用 label
-        icon: Tools,        // 统一使用组件对象
+        path: "/tools",
+        label: "辅助工具", // 统一使用 label
+        icon: Tools, // 统一使用组件对象
         children: [
             {
-                path: '/tools/hub', // 建议使用绝对路径，方便菜单高亮
-                label: '工具概览',
+                path: "/tools/hub", // 建议使用绝对路径，方便菜单高亮
+                label: "工具概览",
                 icon: Menu,
                 component: "tools/ToolHub"
             },
             {
-                path: '/tools/dict-compare',
-                label: '字典对比',
+                path: "/tools/dict-compare",
+                label: "字典对比",
                 icon: Collection,
                 component: "tools/DictCompareTool"
+            },
+            {
+                path: "/tools/retry-manager",
+                label: "接口重试管理",
+                icon: Collection,
+                component: "tools/RetryManager"
             }
         ]
     }

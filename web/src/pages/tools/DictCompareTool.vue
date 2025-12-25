@@ -8,35 +8,35 @@
                 </div>
 
                 <div class="search-area glass-effect">
-                    <el-input v-model="keyword" placeholder="请输入 14位材料代码 或 6位产品ID" class="integrated-input" clearable
-                        maxlength="14" @input="handleInput" @keyup.enter="handleCompare">
-                        <template #prefix><el-icon>
-                                <Search />
-                            </el-icon></template>
+                    <el-input v-model="keyword" placeholder="请输入 14位材料代码 或 6位产品ID" class="integrated-input" clearable maxlength="14" @input="handleInput" @keyup.enter="handleCompare">
+                        <template #prefix
+                            ><el-icon>
+                                <Search /> </el-icon
+                        ></template>
                         <template #suffix>
-                            <el-tag :type="keywordType === '产品ID' ? 'success' : 'primary'" size="small" effect="dark"
-                                class="mode-tag">
+                            <el-tag :type="keywordType === '产品ID' ? 'success' : 'primary'" size="small" effect="dark" class="mode-tag">
                                 {{ keywordType }}
                             </el-tag>
                         </template>
                     </el-input>
-                    <el-button type="primary" :loading="loading" class="audit-btn" @click="handleCompare">
-                        开始对比
-                    </el-button>
+                    <el-button type="primary" :loading="loading" class="audit-btn" @click="handleCompare"> 开始对比 </el-button>
                 </div>
             </div>
         </section>
 
-        <el-dialog v-model="choiceVisible" title="核对冲突：请确认具体条目" width="850px" append-to-body destroy-on-close
-            class="selection-dialog">
+        <el-dialog v-model="choiceVisible" title="核对冲突：请确认具体条目" width="850px" append-to-body destroy-on-close class="selection-dialog">
             <div class="selection-header">
-                <el-alert title="检测到多个怡道系统产品信息" type="warning"
-                    description="该材料代码在怡道系统对应多个产品 ID，请通过下方的名称与规格进行确认，点击对应行进行对比。" show-icon :closable="false" />
+                <el-alert
+                    title="检测到多个怡道系统产品信息"
+                    type="warning"
+                    description="该材料代码在怡道系统对应多个产品 ID，请通过下方的名称与规格进行确认，点击对应行进行对比。"
+                    show-icon
+                    :closable="false"
+                />
             </div>
 
             <div class="selection-scroller">
-                <div v-for="item in multiOptions" :key="item.ProductInfoID" class="choice-card"
-                    @click="confirmSelection(item)">
+                <div v-for="item in multiOptions" :key="item.ProductInfoID" class="choice-card" @click="confirmSelection(item)">
                     <div class="card-meta">
                         <span class="meta-id">产品ID: {{ item.ProductInfoID }}</span>
                         <span class="meta-code">材料代码：{{ item.ypdm }}</span>
@@ -44,7 +44,7 @@
 
                     <div class="card-body">
                         <div class="item-name">{{ item.ypmc }}</div>
-                        <div class="item-spec">{{ item.ypgg || '规格型号未维护' }}</div>
+                        <div class="item-spec">{{ item.ypgg || "规格型号未维护" }}</div>
                     </div>
 
                     <div class="card-arrow">
@@ -63,12 +63,12 @@
                         <el-icon class="status-icon">
                             <InfoFilled />
                         </el-icon>
-                        <span class="summary-text">比对完成：共 {{ compareResults.length }} 项，发现 <b class="danger">{{
-                            mismatchCount
-                                }}</b> 项差异</span>
+                        <span class="summary-text"
+                            >比对完成：共 {{ compareResults.length }} 项，发现 <b class="danger">{{ mismatchCount }}</b> 项差异</span
+                        >
                     </div>
                     <el-tag :type="mismatchCount === 0 ? 'success' : 'danger'" effect="dark" class="status-pill">
-                        {{ mismatchCount === 0 ? '数据一致' : '检测到冲突' }}
+                        {{ mismatchCount === 0 ? "数据一致" : "检测到冲突" }}
                     </el-tag>
                 </div>
 
@@ -85,11 +85,13 @@
                             <span class="label">产品 ID</span>
                             <span class="key">PRODUCTINFOID</span>
                         </div>
-                        <div class="col-data val-box identity-box">{{ currentSelection.ProductInfoID || '-' }}</div>
-                        <div class="col-status"><el-icon class="icon-match">
+                        <div class="col-data val-box identity-box">{{ currentSelection.ProductInfoID || "-" }}</div>
+                        <div class="col-status">
+                            <el-icon class="icon-match">
                                 <CircleCheckFilled />
-                            </el-icon></div>
-                        <div class="col-data val-box identity-box">{{ currentSelection.ProductInfoID || '-' }}</div>
+                            </el-icon>
+                        </div>
+                        <div class="col-data val-box identity-box">{{ currentSelection.ProductInfoID || "-" }}</div>
                     </div>
 
                     <div class="diff-card identity-row">
@@ -97,20 +99,21 @@
                             <span class="label">材料代码</span>
                             <span class="key">CODE</span>
                         </div>
-                        <div class="col-data val-box identity-box">{{ currentSelection.ypdm || '-' }}</div>
-                        <div class="col-status"><el-icon class="icon-match">
+                        <div class="col-data val-box identity-box">{{ currentSelection.ypdm || "-" }}</div>
+                        <div class="col-status">
+                            <el-icon class="icon-match">
                                 <CircleCheckFilled />
-                            </el-icon></div>
-                        <div class="col-data val-box identity-box">{{ currentSelection.ypdm || '-' }}</div>
+                            </el-icon>
+                        </div>
+                        <div class="col-data val-box identity-box">{{ currentSelection.ypdm || "-" }}</div>
                     </div>
 
-                    <div v-for="(item, index) in compareResults" :key="item.field" class="diff-card"
-                        :class="{ 'mismatch-card': !item.isMatch }" :style="{ animationDelay: index * 0.05 + 's' }">
+                    <div v-for="(item, index) in compareResults" :key="item.field" class="diff-card" :class="{ 'mismatch-card': !item.isMatch }" :style="{ animationDelay: index * 0.05 + 's' }">
                         <div class="col-name">
                             <span class="label">{{ item.label }}</span>
                             <span class="key">{{ item.field.toUpperCase() }}</span>
                         </div>
-                        <div class="col-data val-box">{{ item.localValue || '-' }}</div>
+                        <div class="col-data val-box">{{ item.localValue || "-" }}</div>
                         <div class="col-status">
                             <el-icon v-if="item.isMatch" class="icon-match">
                                 <CircleCheckFilled />
@@ -120,7 +123,7 @@
                             </el-icon>
                         </div>
                         <div class="col-data val-box" :class="{ 'error-box': !item.isMatch }">
-                            <span class="val-text">{{ item.hisValue || '-' }}</span>
+                            <span class="val-text">{{ item.hisValue || "-" }}</span>
                             <span v-if="!item.isMatch" class="error-label">冲突项</span>
                         </div>
                     </div>
@@ -128,32 +131,31 @@
             </div>
         </transition>
 
-        <el-empty v-if="!loading && hasSearched && compareResults.length === 0"
-            :description="errorMsg || '未检索到该编码的比对数据'" />
+        <el-empty v-if="!loading && hasSearched && compareResults.length === 0" :description="errorMsg || '未检索到该编码的比对数据'" />
     </div>
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue';
+import { ref, computed, h } from "vue";
 import { Search, InfoFilled, CircleCheckFilled, WarningFilled, ArrowRightBold } from "@element-plus/icons-vue";
-import myAxios from '@/services/myAxios';
-import { ElMessage } from 'element-plus';
+import myAxios from "@/services/myAxios";
+import { ElMessage } from "element-plus";
 
 // --- 状态定义 ---
-const keyword = ref('');
+const keyword = ref("");
 const loading = ref(false);
 const hasSearched = ref(false);
 const compareResults = ref([]);
-const errorMsg = ref('');
+const errorMsg = ref("");
 const choiceVisible = ref(false);
 const multiOptions = ref([]);
-const currentSelection = ref({ ProductInfoID: '', ypdm: '' });
+const currentSelection = ref({ ProductInfoID: "", ypdm: "" });
 
 // --- 计算属性 ---
 const keywordType = computed(() => {
-    if (!keyword.value) return '产品ID/材料代码';
+    if (!keyword.value) return "产品ID/材料代码";
     const isPureNumber = /^\d+$/.test(keyword.value);
-    return (isPureNumber && parseInt(keyword.value) <= 2147483647) ? '产品ID' : '材料代码';
+    return isPureNumber && parseInt(keyword.value) <= 2147483647 ? "产品ID" : "材料代码";
 });
 
 const mismatchCount = computed(() => {
@@ -161,8 +163,8 @@ const mismatchCount = computed(() => {
 });
 
 // --- 逻辑函数 ---
-const handleInput = (val) => {
-    keyword.value = val.replace(/[^a-zA-Z0-9]/g, '');
+const handleInput = val => {
+    keyword.value = val.replace(/[^a-zA-Z0-9]/g, "");
 };
 
 let msgInstance = null;
@@ -172,14 +174,16 @@ let resetTimer = null;
 const handleCompare = async () => {
     if (!keyword.value) {
         warnCount = Math.min(warnCount + 1, 99);
-        const tipContent = h('div', { style: 'display: flex; align-items: center; gap: 8px;' }, [
-            h('span', null, warnCount > 1 ? '请勿重复点击！' : '请输入对账关键字'),
-            warnCount > 1 ? h('span', { class: 'singleton-badge' }, warnCount) : null
+        const tipContent = h("div", { style: "display: flex; align-items: center; gap: 8px;" }, [
+            h("span", null, warnCount > 1 ? "请勿重复点击！" : "请输入对账关键字"),
+            warnCount > 1 ? h("span", { class: "singleton-badge" }, warnCount) : null
         ]);
         if (msgInstance) msgInstance.close();
-        msgInstance = ElMessage({ message: tipContent, type: 'warning' });
+        msgInstance = ElMessage({ message: tipContent, type: "warning" });
         clearTimeout(resetTimer);
-        resetTimer = setTimeout(() => { warnCount = 0; }, 3000);
+        resetTimer = setTimeout(() => {
+            warnCount = 0;
+        }, 3000);
         return;
     }
 
@@ -187,9 +191,8 @@ const handleCompare = async () => {
     compareResults.value = [];
     hasSearched.value = true;
 
-
     try {
-        const res = await myAxios.post('/dict/compare', { keyword: keyword.value });
+        const res = await myAxios.post("/dict/compare", { keyword: keyword.value });
         if (res.code === 201) {
             multiOptions.value = res.data || [];
             choiceVisible.value = true;
@@ -199,18 +202,18 @@ const handleCompare = async () => {
                 ProductInfoID: res.data.ProductInfoID,
                 ypdm: res.data.ypdm
             };
-            console.log('比对结果：', currentSelection.value);
+            console.log("比对结果：", currentSelection.value);
         } else {
             errorMsg.value = res.message;
         }
     } catch (err) {
-        errorMsg.value = '连接 HIS 接口异常';
+        errorMsg.value = "连接 HIS 接口异常";
     } finally {
         loading.value = false;
     }
 };
 
-const confirmSelection = (row) => {
+const confirmSelection = row => {
     currentSelection.value = { ProductInfoID: row.ProductInfoID, ypdm: row.ypdm };
     keyword.value = row.ProductInfoID.toString();
     choiceVisible.value = false;
@@ -310,7 +313,7 @@ const confirmSelection = (row) => {
 }
 
 .meta-id {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 800;
     color: #409eff;
     font-size: 17px;
@@ -439,14 +442,14 @@ const confirmSelection = (row) => {
 .key {
     font-size: 12px;
     color: #3074c7;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
 }
 
 .val-box {
     padding: 14px 20px;
     background: #f8fafc;
     border-radius: 10px;
-    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-family: "JetBrains Mono", "Consolas", monospace;
     font-size: 15px;
     font-weight: 600;
     color: #475569;

@@ -8,8 +8,7 @@
         </header>
 
         <main class="tool-grid">
-            <div v-for="(tool, index) in tools" :key="tool.path" class="tool-card glass-panel"
-                :style="{ '--delay': index * 0.1 + 's' }" @click="navigateTo(tool)">
+            <div v-for="(tool, index) in tools" :key="tool.path" class="tool-card glass-panel" :style="{ '--delay': index * 0.1 + 's' }" @click="navigateTo(tool)">
                 <div v-if="tool.status === 'coming-soon'" class="status-tag">开发中</div>
 
                 <div class="tool-icon-wrapper" :style="{ background: tool.color + '15', color: tool.color }">
@@ -24,9 +23,8 @@
                 </div>
 
                 <div class="tool-footer">
-                    <el-button :type="tool.status === 'active' ? 'primary' : 'info'" link
-                        :icon="tool.status === 'active' ? 'Right' : 'Lock'">
-                        {{ tool.status === 'active' ? '立即进入' : '暂未开放' }}
+                    <el-button :type="tool.status === 'active' ? 'primary' : 'info'" link :icon="tool.status === 'active' ? 'Right' : 'Lock'">
+                        {{ tool.status === "active" ? "立即进入" : "暂未开放" }}
                     </el-button>
                 </div>
 
@@ -39,9 +37,9 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
+import { useRouter } from "vue-router";
 import { Collection, Setting, Connection, Right, Lock } from "@element-plus/icons-vue";
-import { ElMessage } from 'element-plus';
+import { ElMessage } from "element-plus";
 
 const router = useRouter();
 
@@ -56,11 +54,11 @@ const tools = [
     },
     {
         title: "接口重试管理",
-        description: "监控配送与退库接口状态，支持手动触发失败任务的补偿重试。",
+        description: "监控出库与退库接口数据，支持手动触发失败任务的补偿重试。",
         icon: Connection,
         color: "#67C23A",
         path: "/tools/retry-manager",
-        status: "coming-soon" // 开发中
+        status: "active" // 开发中
     },
     {
         title: "系统参数校对",
@@ -72,8 +70,8 @@ const tools = [
     }
 ];
 
-const navigateTo = (tool) => {
-    if (tool.status === 'coming-soon') {
+const navigateTo = tool => {
+    if (tool.status === "coming-soon") {
         ElMessage.info(`工具「${tool.title}」正在研发中，敬请期待！`);
         return;
     }
