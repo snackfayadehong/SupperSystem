@@ -135,7 +135,7 @@ func writeEncryptionPwd(rootPath string) error {
 // DecryptionPwd 解密
 func DecryptionPwd(rootPath string) (pwd string, err error) {
 	// 使用 filepath.Join 查找私钥
-	privKeyPath := filepath.Join(rootPath, "encry", "private.pem")
+	privKeyPath := filepath.Join(rootPath, "configs", "private.pem")
 	file, err := os.Open(privKeyPath)
 	if err != nil {
 		return
