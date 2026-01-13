@@ -145,7 +145,7 @@ const executeRetry = row => {
                 detailSort: row.detailSort || ""
             });
 
-            if (res.code === 200) {
+            if (res.code === 0) {
                 ElMessage.success("重试指令已下发");
                 handleQuery();
             }

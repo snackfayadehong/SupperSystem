@@ -44,17 +44,17 @@
                             </div>
                             <span class="entry-label">工作量查询</span>
                         </div>
-                        <div class="entry-item">
+                        <div class="entry-item" @click="$router.push('/tools/dict-compare')">
                             <div class="icon-circle green">
                                 <el-icon><Document /></el-icon>
                             </div>
-                            <span class="entry-label">账单对账</span>
+                            <span class="entry-label">字典对比</span>
                         </div>
                         <div class="entry-item">
-                            <div class="icon-circle orange">
+                            <div class="icon-circle orange" @click="$router.push('/tools/retry-manager')">
                                 <el-icon><Management /></el-icon>
                             </div>
-                            <span class="entry-label">采购汇总</span>
+                            <span class="entry-label">接口重试</span>
                         </div>
                     </div>
                 </el-card>
