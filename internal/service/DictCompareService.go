@@ -146,6 +146,7 @@ func (s *DictCompareService) CompareDictData(local *model.LocalDictRow) ([]model
 		{"库房代码", "kfdm"},
 		{"供货单位", "ghdw"},
 		{"公司代码", "gsdm"},
+		{"计费类型", "cljflx"},
 	}
 
 	// 4. 执行对比并组装结果
@@ -195,6 +196,8 @@ func (s *DictCompareService) getReflectVal(data *model.LocalDictRow, key string)
 		return data.Ghdw
 	case "gsdm":
 		return data.Gsdm
+	case "cljflx":
+		return data.Cljflx
 	default:
 		return ""
 	}

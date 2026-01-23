@@ -18,10 +18,12 @@ func (ctrl *DictCompareController) GetLocalDictInfo(keyword string, isIdQuery bo
       WHEN ISNULL(SP.Name,'') = '' THEN mo.Name
       ELSE SP.name
     END AS ypgg`
+	cljflxSql := `CASE WHEN ISNULL(A.ChargeStatus,'') = '0' THEN '1'
+	WHEN ISNULL(A.ChargeStatus,'') = '1' THEN '0' ELSE A.ChargeStatus END AS cljflx`
 
 	// 链式调用
 	query := clientDb.DB.Table("TB_ProductInfo AS A").
-		Select("A.Code AS ypdm, A.ProductInfoID, A.Name AS ypmc, " + ypggSql + ", SPEC.Name AS kfdw, A.PurchasePrice AS kfcgj, A.ChargePrice AS kflsj, A.HisProductStoreCode AS kfdm, B.SourceValue AS gsdm,  B.EnterpriseName AS ghdw").
+		Select("A.Code AS ypdm, A.ProductInfoID, A.Name AS ypmc, " + ypggSql + ", SPEC.Name AS kfdw, A.PurchasePrice AS kfcgj, A.ChargePrice AS kflsj, " + cljflxSql + ", A.HisProductStoreCode AS kfdm, B.SourceValue AS gsdm,  B.EnterpriseName AS ghdw").
 		Joins("JOIN TB_EnterpriseInfo B ON B.EnterpriseID = A.DefaultSupplierID").
 		Joins("LEFT JOIN TB_SpecUnit SPEC ON SPEC.SpecID = A.UseUnit").
 		Joins("LEFT JOIN TB_SpecUnit MO ON MO.SpecID = A.Model").
