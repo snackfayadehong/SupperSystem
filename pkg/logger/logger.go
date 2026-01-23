@@ -29,8 +29,8 @@ const ErrorLevel = zapcore.ErrorLevel
 // 异步日志处理器
 type logEntry struct {
 	level     zapcore.Level
-	message   string
 	fields    []zap.Field
+	message   string
 	caller    string
 	timestamp time.Time
 }
@@ -78,25 +78,6 @@ func (a *asyncLogger) worker() {
 }
 
 func (a *asyncLogger) safeLog(entry logEntry) {
-	//defer func() {
-	//	if r := recover(); r != nil {
-	//		//输出到标准错误
-	//		fmt.Fprintf(os.Stderr, "Log panic recovered:\n%v\n\n", r)
-	//	}
-	//}()
-	//switch entry.level {
-	//case zapcore.DebugLevel:
-	//	zap.L().Debug(entry.message, entry.fields...)
-	//case zapcore.InfoLevel:
-	//	entry.message = "关机空日志"
-	//	zap.L().Info(entry.message, entry.fields...)
-	//case zapcore.WarnLevel:
-	//	zap.L().Warn(entry.message, entry.fields...)
-	//case zapcore.ErrorLevel:
-	//	zap.L().Error(entry.message, entry.fields...)
-	//default:
-	//	zap.L().Info(entry.message, entry.fields...)
-	//}
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Fprintf(os.Stderr, "Log panic recovered:\n%v\n\n", r)
@@ -232,12 +213,12 @@ func AsyncLogWithFields(level zapcore.Level, msg string, fields ...zap.Field) {
 			zap.L().Error(msg, fields...)
 		}
 	}
-	formattedMsg := fmt.Sprintf("%s\r\n%s\r\n", msg, LoggerEndStr)
+	//formattedMsg := fmt.Sprintf("%s\r\n%s\r\n", msg, LoggerEndStr)
 	// 异步记录主日志
 	entry := logEntry{
 		level:   level,
-		message: formattedMsg,
 		fields:  fields,
+		message: msg,
 	}
 	select {
 	case asyncLog.logCh <- entry:
@@ -359,6 +340,7 @@ func GinLogger(c *gin.Context) {
 	} else {
 		AsyncLogWithFields(zapcore.InfoLevel, "HTTP Request", logFields...)
 	}
+	AsyncLog(fmt.Sprintf("\r\n%s", LoggerEndStr))
 }
 
 func shouldLogBody(c *gin.Context) bool {

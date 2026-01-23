@@ -2,8 +2,8 @@ package service
 
 import (
 	"SupperSystem/internal/controller"
-	http2 "SupperSystem/pkg/http"
 	"SupperSystem/internal/model"
+	http2 "SupperSystem/pkg/http"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -67,13 +67,17 @@ func (s *WorkloadService) GetWorkloadReport(startTime, endTime string) ([]model.
 	for _, r := range raws {
 		if _, ok := groupMap[r.OperatorName]; !ok {
 			groupMap[r.OperatorName] = &model.WorkloadGroup{
-				Operator: r.OperatorName,
-				Inbound:  []model.WorkloadDetail{},
-				Outbound: []model.WorkloadDetail{},
-				Return:   []model.WorkloadDetail{},
+				Operator:        r.OperatorName,
+				Inbound:         []model.WorkloadDetail{},
+				Outbound:        []model.WorkloadDetail{},
+				Return:          []model.WorkloadDetail{},
+				InReg:           []model.WorkloadDetail{},
+				Purchase:        []model.WorkloadDetail{},
+				Push:            []model.WorkloadDetail{},
+				SecondaryRefund: []model.WorkloadDetail{},
 			}
 		}
-
+		group := groupMap[r.OperatorName]
 		detail := model.WorkloadDetail{
 			// 调用 Go 内部的转换函数
 			Category:    s.mapDeptToCategory(r.StorehouseCode, r.FallbackName),
@@ -84,11 +88,21 @@ func (s *WorkloadService) GetWorkloadReport(startTime, endTime string) ([]model.
 
 		switch r.OperationType {
 		case 0:
-			groupMap[r.OperatorName].Inbound = append(groupMap[r.OperatorName].Inbound, detail)
+			group.Inbound = append(group.Inbound, detail)
 		case 1:
-			groupMap[r.OperatorName].Outbound = append(groupMap[r.OperatorName].Outbound, detail)
+			group.Outbound = append(group.Outbound, detail)
 		case 2:
-			groupMap[r.OperatorName].Return = append(groupMap[r.OperatorName].Return, detail)
+			group.Return = append(group.Return, detail)
+		case 3:
+			group.InReg = append(group.InReg, detail)
+		case 4:
+			detail.Category = "采购单发送"
+			group.Purchase = append(group.Purchase, detail)
+		case 5:
+			detail.Category = "催货业务"
+			group.Push = append(group.Push, detail)
+		case 6:
+			group.SecondaryRefund = append(group.SecondaryRefund, detail)
 		}
 	}
 

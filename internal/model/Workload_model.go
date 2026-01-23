@@ -28,8 +28,12 @@ type WorkloadDetail struct {
 
 // WorkloadGroup 最终聚合结构
 type WorkloadGroup struct {
-	Operator string           `json:"operator"`
-	Inbound  []WorkloadDetail `json:"inbound"`
-	Outbound []WorkloadDetail `json:"outbound"`
-	Return   []WorkloadDetail `json:"return"`
+	Operator        string           `json:"operator"`
+	Inbound         []WorkloadDetail `json:"inbound"`         // 入库验收
+	Outbound        []WorkloadDetail `json:"outbound"`        // 出库
+	Return          []WorkloadDetail `json:"return"`          // 退货
+	InReg           []WorkloadDetail `json:"inReg"`           // 入库登记
+	Purchase        []WorkloadDetail `json:"purchase"`        // 采购订单发送
+	Push            []WorkloadDetail `json:"push"`            // 采购订单催货
+	SecondaryRefund []WorkloadDetail `json:"secondaryRefund"` // 二级库退库
 }
