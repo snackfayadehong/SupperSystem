@@ -30,3 +30,6 @@ src/.vscode
 *.sln
 *.sw?
 /src/env/.env.production
+/web/.vscode/launch.json
+/configs/private.pem
+/configs/public.pem
