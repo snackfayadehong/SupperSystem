@@ -1,206 +1,219 @@
 <template>
-  <div class="workload-table-wrapper">
-    <el-skeleton :loading="loading" animated :rows="10">
-      <template #default>
-        <el-table :data="data" border stripe style="width: 100%" class="modern-dashboard-table"
-          header-cell-class-name="modern-table-header" row-key="operator">
-          <el-table-column type="expand">
-            <template #default="{ row }">
-              <div class="expand-content">
-                <el-row :gutter="40">
-                  <el-col :span="14">
-                    <h4 class="preview-title">核心业务预览 (金额最高项)</h4>
-                    <div class="top-items-grid">
-                      <div class="top-item success-bg">
-                        <span class="type-label">入库主项：</span>
-                        <span class="item-val">{{ getTopCategory(row.inbound) }}</span>
-                      </div>
-                      <div class="top-item danger-bg">
-                        <span class="type-label">出库主项：</span>
-                        <span class="item-val">{{ getTopCategory(row.outbound) }}</span>
-                      </div>
-                    </div>
-                  </el-col>
-                  <el-col :span="10">
-                    <h4 class="preview-title">单据分类统计</h4>
-                    <el-descriptions :column="1" border size="small">
-                      <el-descriptions-item label="入库总计">{{ row.inbound?.length || 0 }} 类物料</el-descriptions-item>
-                      <el-descriptions-item label="出库总计">{{ row.outbound?.length || 0 }} 类物料</el-descriptions-item>
-                      <el-descriptions-item label="退还总计">{{ row.return?.length || 0 }} 类物料</el-descriptions-item>
-                    </el-descriptions>
-                  </el-col>
-                </el-row>
-              </div>
-            </template>
-          </el-table-column>
+    <div class="workload-table-wrapper">
+        <el-skeleton :loading="loading" animated :rows="10">
+            <template #default>
+                <el-table :data="data" border stripe style="width: 100%" class="modern-dashboard-table" header-cell-class-name="modern-table-header" row-key="operator">
+                    <el-table-column type="expand">
+                        <template #default="{ row }">
+                            <div class="expand-content">
+                                <el-row :gutter="40">
+                                    <el-col :span="12">
+                                        <h4 class="preview-title">非金额业务统计 (单据量)</h4>
+                                        <div class="mini-stat-row">
+                                            <div class="mini-stat">
+                                                <span class="label">采购下单</span>
+                                                <span class="val">{{ calculateCount(row.purchase) }} 单</span>
+                                            </div>
+                                            <div class="mini-stat">
+                                                <span class="label">催货跟进</span>
+                                                <span class="val">{{ calculateCount(row.push) }} 单</span>
+                                            </div>
+                                        </div>
+                                    </el-col>
+                                    <el-col :span="12">
+                                        <h4 class="preview-title">主营业务 TOP1 概览</h4>
+                                        <div class="top-items-grid">
+                                            <div class="top-item success-bg" v-if="row.inbound?.length">
+                                                <span class="type-label">入库最忙：</span>
+                                                <span class="item-val">{{ getTopCategory(row.inbound) }}</span>
+                                            </div>
+                                            <div class="top-item info-bg" v-if="row.inReg?.length">
+                                                <span class="type-label">登记最多：</span>
+                                                <span class="item-val">{{ getTopCategory(row.inReg) }}</span>
+                                            </div>
+                                        </div>
+                                    </el-col>
+                                </el-row>
+                            </div>
+                        </template>
+                    </el-table-column>
 
-          <el-table-column prop="operator" label="操作人员" align="center" min-width="120">
-            <template #default="{ row }">
-              <span class="operator-name-modern">{{ row.operator }}</span>
-            </template>
-          </el-table-column>
+                    <el-table-column prop="operator" label="操作人员" align="center" min-width="110" fixed>
+                        <template #default="{ row }">
+                            <span class="operator-name-modern">{{ row.operator }}</span>
+                        </template>
+                    </el-table-column>
 
-          <el-table-column label="入库汇总" align="center" min-width="160">
-            <template #default="{ row }">
-              <span class="amount-val success">{{ formatCurrency(calculateTotal(row.inbound)) }}</span>
-            </template>
-          </el-table-column>
+                    <el-table-column label="入库验收(金额)" align="center" min-width="150">
+                        <template #default="{ row }">
+                            <span class="amount-val success">{{ formatCurrency(calculateTotal(row.inbound)) }}</span>
+                        </template>
+                    </el-table-column>
 
-          <el-table-column label="出库汇总" align="center" min-width="160">
-            <template #default="{ row }">
-              <span class="amount-val danger">{{ formatCurrency(calculateTotal(row.outbound)) }}</span>
-            </template>
-          </el-table-column>
+                    <el-table-column label="入库登记(金额)" align="center" min-width="150">
+                        <template #default="{ row }">
+                            <span class="amount-val primary">{{ formatCurrency(calculateTotal(row.inReg)) }}</span>
+                        </template>
+                    </el-table-column>
 
-          <el-table-column label="退还统计" align="center" min-width="160">
-            <template #default="{ row }">
-              <span class="amount-val warning">{{ formatCurrency(calculateTotal(row.return)) }}</span>
-            </template>
-          </el-table-column>
+                    <el-table-column label="出库发放(金额)" align="center" min-width="150">
+                        <template #default="{ row }">
+                            <span class="amount-val danger">{{ formatCurrency(calculateTotal(row.outbound)) }}</span>
+                        </template>
+                    </el-table-column>
 
-          <el-table-column label="管理" align="center" width="160" fixed="right">
-            <template #default="{ row }">
-              <el-button type="primary" link icon="View" @click="$emit('view-detail', row)">明细</el-button>
-              <el-button type="success" link icon="Download" @click="$emit('export-row', row)">导出</el-button>
+                    <el-table-column label="退货退库" align="center" min-width="140">
+                        <template #default="{ row }">
+                            <span class="amount-val warning">{{ formatCurrency(calculateTotal(row.return) + calculateTotal(row.secondaryRefund)) }}</span>
+                        </template>
+                    </el-table-column>
+
+                    <el-table-column label="管理" align="center" width="150" fixed="right">
+                        <template #default="{ row }">
+                            <el-button type="primary" link icon="View" @click="$emit('view-detail', row)">全景明细</el-button>
+                            <el-button type="success" link icon="Download" @click="$emit('export-row', row)">导出</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
             </template>
-          </el-table-column>
-        </el-table>
-      </template>
-    </el-skeleton>
-  </div>
+        </el-skeleton>
+    </div>
 </template>
 
 <script setup>
 const props = defineProps({
-  data: { type: Array, default: () => [] },
-  loading: { type: Boolean, default: false }
+    data: { type: Array, default: () => [] },
+    loading: { type: Boolean, default: false }
 });
 
-defineEmits(['view-detail', 'export-row']);
+defineEmits(["view-detail", "export-row"]);
 
-/**
- * 核心逻辑：计算金额最大的分类用于预览
- */
-const getTopCategory = (items) => {
-  // 增加对非数组或空数组的拦截
-  if (!items || !Array.isArray(items) || items.length === 0) return "暂无业务记录";
-  // 使用解构赋值确保不污染原数据，并增加可选链
-  const sorted = [...items].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0));
-  const top = sorted[0];
-  return `${top.category} (￥${(top.totalAmount || 0).toLocaleString()})`;
-  // if (!items || items.length === 0) return "暂无业务记录";
-  // const top = [...items].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0))[0];
-  // return `${top.category} (￥${top.totalAmount.toLocaleString()})`;
+const getTopCategory = items => {
+    if (!items || !Array.isArray(items) || items.length === 0) return "无记录";
+    const sorted = [...items].sort((a, b) => (b.totalAmount || 0) - (a.totalAmount || 0));
+    const top = sorted[0];
+    return `${top.category} (￥${Math.round(top.totalAmount / 10000)}万)`; // 简化显示
 };
 
-const formatCurrency = (val) => {
-  return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(val);
+const formatCurrency = val => {
+    if (!val) return "-";
+    return new Intl.NumberFormat("zh-CN", { style: "decimal", minimumFractionDigits: 2 }).format(val);
 };
 
-const calculateTotal = (items) => {
-  if (!items || !Array.isArray(items)) return 0;
-  return items.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+const calculateTotal = items => {
+    if (!items || !Array.isArray(items)) return 0;
+    return items.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+};
+
+const calculateCount = items => {
+    if (!items || !Array.isArray(items)) return 0;
+    return items.reduce((sum, item) => sum + (item.billCount || 0), 0);
 };
 </script>
 
 <style scoped>
 .workload-table-wrapper {
-  background: transparent;
-  width: 100%;
+    width: 100%;
 }
-
-/* 表格整体风格：轻量、圆角 */
 .modern-dashboard-table {
-  --el-table-border-color: #f0f0f0;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    --el-table-border-color: #f0f0f0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
-
 .operator-name-modern {
-  font-weight: 700;
-  color: #262626;
-  font-size: 16px;
+    font-weight: 700;
+    color: #262626;
+    font-size: 15px;
 }
-
 .amount-val {
-  font-family: 'Monaco', monospace;
-  font-weight: 800;
-  font-size: 17px;
+    font-family: "Monaco", monospace;
+    font-weight: 600;
+    font-size: 15px;
 }
-
 .success {
-  color: #52c41a;
+    color: #67c23a;
 }
-
 .danger {
-  color: #ff4d4f;
+    color: #f56c6c;
 }
-
 .warning {
-  color: #faad14;
+    color: #e6a23c;
+}
+.primary {
+    color: #409eff;
 }
 
-/* 展开行预览样式 */
+/* 展开行样式 */
 .expand-content {
-  padding: 24px 40px;
-  background: rgba(64, 158, 255, 0.02);
+    padding: 20px 40px;
+    background: #fcfcfc;
+}
+.preview-title {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #909399;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.preview-title {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: #8c8c8c;
-  font-weight: 500;
+.mini-stat-row {
+    display: flex;
+    gap: 24px;
+}
+.mini-stat {
+    background: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid #ebeef5;
+    display: flex;
+    flex-direction: column;
+}
+.mini-stat .label {
+    font-size: 12px;
+    color: #909399;
+    margin-bottom: 4px;
+}
+.mini-stat .val {
+    font-size: 16px;
+    font-weight: bold;
+    color: #303133;
 }
 
 .top-items-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
-
 .top-item {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  border: 1px solid transparent;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    border: 1px solid transparent;
+    display: flex;
+    justify-content: space-between;
 }
-
 .success-bg {
-  background: #f6ffed;
-  border-color: #b7eb8f;
-  color: #389e0d;
+    background: #f0f9eb;
+    color: #67c23a;
+    border-color: #e1f3d8;
 }
-
-.danger-bg {
-  background: #fff1f0;
-  border-color: #ffa39e;
-  color: #cf1322;
+.info-bg {
+    background: #f4f4f5;
+    color: #909399;
+    border-color: #e9e9eb;
 }
-
 .item-val {
-  font-weight: bold;
-  margin-left: 4px;
+    font-weight: bold;
 }
 
-/* 表头美化 */
 :deep(.modern-table-header) {
-  background-color: #fafafa !important;
-  color: #262626;
-  font-weight: 700;
-  height: 50px;
+    background-color: #fafafa !important;
+    color: #606266;
+    height: 48px;
 }
-
-:global(html.dark) .modern-dashboard-table {
-  --el-table-border-color: #333;
-}
-
-:global(html.dark) .operator-name-modern {
-  color: #e5eaf3;
-}
-
 :global(html.dark) .expand-content {
-  background: #1a1a1a;
+    background: #1a1a1a;
 }
 </style>

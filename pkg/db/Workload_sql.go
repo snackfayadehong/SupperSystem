@@ -36,7 +36,7 @@ ReturnBase AS (
 PurchaseBase AS (
     SELECT em.EmployeeName as OpName, '采购业务' as Dept, a.PurchaseSummaryID as billno, 0 as prod_id, 0 as qty, 0 as Price
     FROM TB_PurchaseSummary a LEFT JOIN TB_Employee em ON em.HRCode = Auditor
-    WHERE a.Status in (91,71,61,81,92,51) AND a.AuditorDate >= ? AND a.AuditorDate < ?
+    WHERE a.Status in (91,71,61,81,92,51) AND a.AuditorDate >= ? AND a.AuditorDate < ? AND HRcODE <> '0000900000'
 ),
 PushBase AS (
     SELECT em.EmployeeName as OpName, '采购业务' as Dept, a.BillNo as billno, 0 as prod_id, 0 as qty, 0 as Price
@@ -64,5 +64,10 @@ FinalResults AS (
     UNION ALL
     SELECT OpName, 6, Dept, COUNT(DISTINCT billno), SUM(qty*Price), (SELECT SUM(c) FROM (SELECT COUNT(DISTINCT prod_id) as c FROM RefundBase t2 WHERE t2.OpName=t1.OpName AND t2.Dept=t1.Dept GROUP BY billno) x) FROM RefundBase t1 GROUP BY OpName, Dept
 )
-SELECT OpName as OperatorName, OpType as OperationType, Dept as StorehouseCode, Specs as SpecCount, Bills as BillCount, Amt as TotalAmount, '' as FallbackName FROM FinalResults
+SELECT 
+    f.OpName as OperatorName, f.OpType as OperationType, f.Dept as StorehouseCode,
+    f.Specs as SpecCount, f.Bills as BillCount, f.Amt as TotalAmount,
+    d.DepartmentName as FallbackName
+FROM FinalResults f
+LEFT JOIN TB_Department d ON f.Dept = d.DeptCode
 `

@@ -18,11 +18,15 @@
 
             <el-input :model-value="search" @input="$emit('update:search', $event)" placeholder="搜索操作员" prefix-icon="Search" clearable style="width: 200px" />
 
-            <el-select :model-value="type" @change="$emit('update:type', $event)" placeholder="业务筛选" clearable style="width: 140px">
-                <el-option label="全部" value="all" />
-                <el-option label="入库" value="inbound" />
-                <el-option label="出库" value="outbound" />
-                <el-option label="退库" value="return" />
+            <el-select :model-value="type" @change="$emit('update:type', $event)" placeholder="业务筛选" clearable style="width: 160px">
+                <el-option label="全部业务" value="all" />
+                <el-option label="📥 入库验收" value="inbound" />
+                <el-option label="📤 出库发放" value="outbound" />
+                <el-option label="📝 入库登记" value="inReg" />
+                <el-option label="🔙 退货业务" value="return" />
+                <el-option label="♻️ 二级库退库" value="secondaryRefund" />
+                <el-option label="🛒 采购下单" value="purchase" />
+                <el-option label="🔔 催货跟进" value="push" />
             </el-select>
         </div>
     </el-card>
@@ -57,13 +61,11 @@ const shortcuts = [
         value: () => {
             const end = new Date();
             const start = new Date();
-            // 使用 setMonth 方法考虑月份的实际天数
             start.setMonth(start.getMonth() - 1);
             return [start, end];
         }
     }
 ];
-
 </script>
 
 <style scoped>
