@@ -10,6 +10,7 @@
                 <div class="card-body">
                     <span class="label">{{ item.title }}</span>
                     <h2 class="value">{{ item.value }}</h2>
+                    <span v-if="item.sub" class="sub-text">{{ item.sub }}</span>
                 </div>
             </div>
         </div>
@@ -17,29 +18,30 @@
         <div class="analysis-glass-card">
             <div class="chart-box">
                 <svg viewBox="0 0 36 36" class="circular-chart">
-                    <path class="circle-bg"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
 
-                    <path class="circle inbound" :style="{ strokeDasharray: `${percents.inbound}, 100` }"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-
-                    <path class="circle outbound"
-                        :style="{ strokeDasharray: `${percents.outbound}, 100`, strokeDashoffset: `-${percents.inbound}` }"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-
-                    <path class="circle return-path"
-                        :style="{ strokeDasharray: `${percents.return}, 100`, strokeDashoffset: `-${percents.inbound + percents.outbound}` }"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path
+                        v-for="(segment, index) in chartSegments"
+                        :key="segment.key"
+                        class="circle"
+                        :stroke="segment.color"
+                        :style="{
+                            strokeDasharray: `${segment.percent}, 100`,
+                            strokeDashoffset: `-${segment.offset}`
+                        }"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
                 </svg>
                 <div class="chart-center">
-                    <span class="center-label">工作占比</span>
+                    <span class="center-label">金额分布</span>
                 </div>
             </div>
 
             <div class="chart-legend">
-                <div class="legend-item"><span class="dot inbound"></span> 入库 {{ percents.inbound }}%</div>
-                <div class="legend-item"><span class="dot outbound"></span> 出库 {{ percents.outbound }}%</div>
-                <div class="legend-item"><span class="dot return"></span> 退还 {{ percents.return }}%</div>
+                <div v-for="seg in chartSegments" :key="seg.key" class="legend-item">
+                    <span class="dot" :style="{ background: seg.color }"></span>
+                    {{ seg.label }} {{ seg.percent }}%
+                </div>
             </div>
         </div>
     </div>
@@ -47,39 +49,79 @@
 
 <script setup>
 import { computed } from "vue";
-import { Download, Upload, RefreshLeft, User } from "@element-plus/icons-vue";
+import { Download, Upload, RefreshLeft, User, List, Money } from "@element-plus/icons-vue";
 
-const props = defineProps(['data']);
+const props = defineProps(["data"]);
 
-// 计算各项业务占总金额的百分比
-const percents = computed(() => {
-    const i = props.data.reduce((s, r) => s + (r.inbound?.reduce((ss, x) => ss + (x.totalAmount || 0), 0) || 0), 0);
-    const o = props.data.reduce((s, r) => s + (r.outbound?.reduce((ss, x) => ss + (x.totalAmount || 0), 0) || 0), 0);
-    const r = props.data.reduce((s, r) => s + (r.return?.reduce((ss, x) => ss + (x.totalAmount || 0), 0) || 0), 0);
+// 辅助计算总金额
+const sumAmount = list => list?.reduce((acc, item) => acc + (item.totalAmount || 0), 0) || 0;
+// 辅助计算单据数
+const sumBills = (rows, type) => rows.reduce((acc, row) => acc + (row[type]?.reduce((s, i) => s + (i.billCount || 0), 0) || 0), 0);
 
-    const total = i + o + r || 1; // 防止除以0
-
-    return {
-        inbound: Math.round((i / total) * 100),
-        outbound: Math.round((o / total) * 100),
-        return: Math.round((r / total) * 100)
+// 计算环形图数据 (只计算有金额的业务)
+const chartSegments = computed(() => {
+    const totalMap = {
+        inbound: props.data.reduce((s, r) => s + sumAmount(r.inbound), 0),
+        outbound: props.data.reduce((s, r) => s + sumAmount(r.outbound), 0),
+        return: props.data.reduce((s, r) => s + sumAmount(r.return), 0),
+        inReg: props.data.reduce((s, r) => s + sumAmount(r.inReg), 0),
+        secondary: props.data.reduce((s, r) => s + sumAmount(r.secondaryRefund), 0)
     };
+
+    const total = Object.values(totalMap).reduce((a, b) => a + b, 0) || 1;
+
+    // 定义配置
+    const configs = [
+        { key: "inbound", label: "入库", color: "#67C23A" },
+        { key: "outbound", label: "出库", color: "#F56C6C" },
+        { key: "inReg", label: "登记", color: "#409EFF" },
+        { key: "return", label: "退还供方", color: "#E6A23C" },
+        { key: "secondary", label: "二级库退库", color: "#909399" }
+    ];
+
+    let currentOffset = 0;
+    return configs
+        .map(cfg => {
+            const val = totalMap[cfg.key];
+            const percent = Math.round((val / total) * 100);
+            const segment = {
+                ...cfg,
+                value: val,
+                percent: percent,
+                offset: currentOffset
+            };
+            currentOffset += percent;
+            return segment;
+        })
+        .filter(s => s.value > 0); // 只显示有数据的段
 });
 
 const stats = computed(() => {
-    const sum = (type) => props.data.reduce((s, row) => s + (row[type]?.reduce((ss, i) => ss + (i.totalAmount || 0), 0) || 0), 0);
-    const format = (val) => new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(val);
+    const format = val => new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", maximumFractionDigits: 0 }).format(val);
+
+    // 计算各维度总额
+    const totalInbound = props.data.reduce((s, r) => s + sumAmount(r.inbound), 0);
+    const totalOutbound = props.data.reduce((s, r) => s + sumAmount(r.outbound), 0);
+    const totalInReg = props.data.reduce((s, r) => s + sumAmount(r.inReg), 0);
+    const totalReturn = props.data.reduce((s, r) => s + sumAmount(r.return) + sumAmount(r.secondaryRefund), 0);
+
+    // 采购/催货 只算单数
+    const countPurchase = sumBills(props.data, "purchase");
+    const countPush = sumBills(props.data, "push");
 
     return [
-        { title: "总入库金额", value: format(sum('inbound')), icon: Download, color: "#67C23A" },
-        { title: "总出库金额", value: format(sum('outbound')), icon: Upload, color: "#F56C6C" },
-        { title: "退还总额", value: format(sum('return')), icon: RefreshLeft, color: "#E6A23C" },
-        { title: "操作员总数", value: props.data.length, icon: User, color: "#409EFF" }
+        { title: "入库验收总额", value: format(totalInbound), icon: Download, color: "#67C23A" },
+        { title: "出库发放总额", value: format(totalOutbound), icon: Upload, color: "#F56C6C" },
+        { title: "入库登记总额", value: format(totalInReg), icon: List, color: "#409EFF" },
+        { title: "各类退还总额", value: format(totalReturn), icon: RefreshLeft, color: "#E6A23C", sub: "(含二级库)" },
+        { title: "采购与催货", value: `${countPurchase + countPush} 单`, icon: Money, color: "#9c27b0", sub: `采购:${countPurchase} 催货:${countPush}` },
+        { title: "活跃操作员", value: props.data.length + " 人", icon: User, color: "#303133" }
     ];
 });
 </script>
 
 <style scoped>
+/* 保持原有布局，增加网格自适应 */
 .stats-container {
     display: grid;
     grid-template-columns: 1fr 300px;
@@ -89,25 +131,50 @@ const stats = computed(() => {
 
 .stats-cards-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* 自适应列宽 */
     gap: 20px;
 }
 
 .modern-stat-card {
     background: var(--bg-card, #fff);
-    padding: 24px;
-    border-radius: 20px;
+    padding: 20px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     gap: 16px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     transition: transform 0.3s;
+    border: 1px solid transparent;
 }
 
 .modern-stat-card:hover {
     transform: translateY(-5px);
+    border-color: rgba(0, 0, 0, 0.05);
 }
 
+/* 字体和颜色微调 */
+.card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 13px;
+    color: #909399;
+}
+.value {
+    margin: 4px 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #303133;
+}
+.sub-text {
+    font-size: 12px;
+    color: #c0c4cc;
+    margin-top: 2px;
+}
+
+/* 图表部分样式复用原版，增加颜色类 */
 .analysis-glass-card {
     background: var(--bg-card, #fff);
     padding: 24px;
@@ -118,46 +185,25 @@ const stats = computed(() => {
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
-
-/* 环形图样式 */
 .circular-chart {
     width: 140px;
     height: 140px;
     transform: rotate(-90deg);
 }
-
-/* 旋转90度让起始点在顶部 */
 .circle-bg {
     fill: none;
     stroke: #f0f2f5;
     stroke-width: 3.5;
 }
-
 .circle {
     fill: none;
     stroke-width: 3.8;
     stroke-linecap: round;
     transition: all 0.5s ease;
 }
-
-.inbound {
-    stroke: #67C23A;
-}
-
-.outbound {
-    stroke: #F56C6C;
-}
-
-.return-path {
-    stroke: #E6A23C;
-}
-
-/* 退还路径颜色 */
-
 .chart-box {
     position: relative;
 }
-
 .chart-center {
     position: absolute;
     top: 50%;
@@ -165,60 +211,36 @@ const stats = computed(() => {
     transform: translate(-50%, -50%);
     text-align: center;
 }
-
 .center-label {
     font-size: 13px;
     color: #909399;
     font-weight: 500;
 }
-
 .chart-legend {
     margin-top: 20px;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
-
 .legend-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 14px;
+    font-size: 13px;
     color: #606266;
 }
-
 .dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-}
-
-.dot.inbound {
-    background: #67C23A;
-}
-
-.dot.outbound {
-    background: #F56C6C;
-}
-
-.dot.return {
-    background: #E6A23C;
 }
 
 :global(html.dark) .modern-stat-card,
 :global(html.dark) .analysis-glass-card {
     background: #1e1e1e;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
-
-@media (max-width: 1200px) {
-    .stats-container {
-        grid-template-columns: 1fr;
-    }
-
-    .stats-cards-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    }
+:global(html.dark) .value {
+    color: #e5eaf3;
 }
 </style>
