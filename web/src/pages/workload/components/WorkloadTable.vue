@@ -2,7 +2,8 @@
     <div class="workload-table-wrapper">
         <el-skeleton :loading="loading" animated :rows="10">
             <template #default>
-                <el-table :data="data" border stripe style="width: 100%" class="modern-dashboard-table" header-cell-class-name="modern-table-header" row-key="operator">
+                <el-table :data="data" border stripe style="width: 100%" class="modern-dashboard-table"
+                    header-cell-class-name="modern-table-header" row-key="operator">
                     <el-table-column type="expand">
                         <template #default="{ row }">
                             <div class="expand-content">
@@ -21,7 +22,7 @@
                                         </div>
                                     </el-col>
                                     <el-col :span="12">
-                                        <h4 class="preview-title">主营业务 TOP1 概览</h4>
+                                        <h4 class="preview-title">业务 TOP1 概览</h4>
                                         <div class="top-items-grid">
                                             <div class="top-item success-bg" v-if="row.inbound?.length">
                                                 <span class="type-label">入库最忙：</span>
@@ -64,14 +65,16 @@
 
                     <el-table-column label="退货退库" align="center" min-width="140">
                         <template #default="{ row }">
-                            <span class="amount-val warning">{{ formatCurrency(calculateTotal(row.return) + calculateTotal(row.secondaryRefund)) }}</span>
+                            <span class="amount-val warning">{{ formatCurrency(calculateTotal(row.return) +
+                                calculateTotal(row.secondaryRefund)) }}</span>
                         </template>
                     </el-table-column>
 
                     <el-table-column label="管理" align="center" width="150" fixed="right">
                         <template #default="{ row }">
-                            <el-button type="primary" link icon="View" @click="$emit('view-detail', row)">全景明细</el-button>
-                            <el-button type="success" link icon="Download" @click="$emit('export-row', row)">导出</el-button>
+                            <el-button type="primary" link icon="View" @click="$emit('view-detail', row)">明细</el-button>
+                            <el-button type="success" link icon="Download"
+                                @click="$emit('export-row', row)">导出</el-button>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -115,31 +118,38 @@ const calculateCount = items => {
 .workload-table-wrapper {
     width: 100%;
 }
+
 .modern-dashboard-table {
     --el-table-border-color: #f0f0f0;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
 }
+
 .operator-name-modern {
     font-weight: 700;
     color: #262626;
     font-size: 15px;
 }
+
 .amount-val {
     font-family: "Monaco", monospace;
     font-weight: 600;
     font-size: 15px;
 }
+
 .success {
     color: #67c23a;
 }
+
 .danger {
     color: #f56c6c;
 }
+
 .warning {
     color: #e6a23c;
 }
+
 .primary {
     color: #409eff;
 }
@@ -149,6 +159,7 @@ const calculateCount = items => {
     padding: 20px 40px;
     background: #fcfcfc;
 }
+
 .preview-title {
     margin: 0 0 12px;
     font-size: 13px;
@@ -162,6 +173,7 @@ const calculateCount = items => {
     display: flex;
     gap: 24px;
 }
+
 .mini-stat {
     background: #fff;
     padding: 10px 16px;
@@ -170,11 +182,13 @@ const calculateCount = items => {
     display: flex;
     flex-direction: column;
 }
+
 .mini-stat .label {
     font-size: 12px;
     color: #909399;
     margin-bottom: 4px;
 }
+
 .mini-stat .val {
     font-size: 16px;
     font-weight: bold;
@@ -186,6 +200,7 @@ const calculateCount = items => {
     flex-direction: column;
     gap: 8px;
 }
+
 .top-item {
     padding: 8px 12px;
     border-radius: 6px;
@@ -194,16 +209,19 @@ const calculateCount = items => {
     display: flex;
     justify-content: space-between;
 }
+
 .success-bg {
     background: #f0f9eb;
     color: #67c23a;
     border-color: #e1f3d8;
 }
+
 .info-bg {
     background: #f4f4f5;
     color: #909399;
     border-color: #e9e9eb;
 }
+
 .item-val {
     font-weight: bold;
 }
@@ -213,6 +231,7 @@ const calculateCount = items => {
     color: #606266;
     height: 48px;
 }
+
 :global(html.dark) .expand-content {
     background: #1a1a1a;
 }

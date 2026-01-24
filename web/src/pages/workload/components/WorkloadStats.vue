@@ -18,19 +18,14 @@
         <div class="analysis-glass-card">
             <div class="chart-box">
                 <svg viewBox="0 0 36 36" class="circular-chart">
-                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="circle-bg"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
 
-                    <path
-                        v-for="(segment, index) in chartSegments"
-                        :key="segment.key"
-                        class="circle"
-                        :stroke="segment.color"
+                    <path v-for="segment in chartSegments" :key="segment.key" class="circle" :stroke="segment.color"
                         :style="{
-                            strokeDasharray: `${segment.percent}, 100`,
+                            strokeDasharray: `${segment.rawPercent}, 100`,
                             strokeDashoffset: `-${segment.offset}`
-                        }"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
+                        }" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                 </svg>
                 <div class="chart-center">
                     <span class="center-label">金额分布</span>
@@ -40,7 +35,7 @@
             <div class="chart-legend">
                 <div v-for="seg in chartSegments" :key="seg.key" class="legend-item">
                     <span class="dot" :style="{ background: seg.color }"></span>
-                    {{ seg.label }} {{ seg.percent }}%
+                    {{ seg.label }} {{ seg.displayLabel }}
                 </div>
             </div>
         </div>
@@ -83,14 +78,30 @@ const chartSegments = computed(() => {
     return configs
         .map(cfg => {
             const val = totalMap[cfg.key];
-            const percent = Math.round((val / total) * 100);
+            // 核心修改 1: 使用浮点数 rawPercent 保证绘图精度，不进行 Math.round
+            const rawPercent = (val / total) * 100;
+
+            // 核心修改 2: 智能格式化显示文本
+            let displayLabel = '0%';
+            if (rawPercent > 0) {
+                if (rawPercent < 0.01) {
+                    displayLabel = '<0.01%'; // 极小值
+                } else if (rawPercent < 1) {
+                    displayLabel = rawPercent.toFixed(2) + '%'; // 小于1%显示两位小数，如 0.02%
+                } else {
+                    displayLabel = Math.round(rawPercent) + '%'; // 正常值保持整数
+                }
+            }
+
             const segment = {
                 ...cfg,
                 value: val,
-                percent: percent,
+                rawPercent: rawPercent, // 用于 style 绑定
+                displayLabel: displayLabel, // 用于页面文字显示
                 offset: currentOffset
             };
-            currentOffset += percent;
+
+            currentOffset += rawPercent; // 累加也使用精确值
             return segment;
         })
         .filter(s => s.value > 0); // 只显示有数据的段
@@ -131,7 +142,8 @@ const stats = computed(() => {
 
 .stats-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* 自适应列宽 */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    /* 自适应列宽 */
     gap: 20px;
 }
 
@@ -162,12 +174,14 @@ const stats = computed(() => {
     font-size: 13px;
     color: #909399;
 }
+
 .value {
     margin: 4px 0 0;
     font-size: 20px;
     font-weight: 700;
     color: #303133;
 }
+
 .sub-text {
     font-size: 12px;
     color: #c0c4cc;
@@ -185,25 +199,30 @@ const stats = computed(() => {
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
+
 .circular-chart {
     width: 140px;
     height: 140px;
     transform: rotate(-90deg);
 }
+
 .circle-bg {
     fill: none;
     stroke: #f0f2f5;
     stroke-width: 3.5;
 }
+
 .circle {
     fill: none;
     stroke-width: 3.8;
     stroke-linecap: round;
     transition: all 0.5s ease;
 }
+
 .chart-box {
     position: relative;
 }
+
 .chart-center {
     position: absolute;
     top: 50%;
@@ -211,11 +230,13 @@ const stats = computed(() => {
     transform: translate(-50%, -50%);
     text-align: center;
 }
+
 .center-label {
     font-size: 13px;
     color: #909399;
     font-weight: 500;
 }
+
 .chart-legend {
     margin-top: 20px;
     width: 100%;
@@ -223,6 +244,7 @@ const stats = computed(() => {
     flex-direction: column;
     gap: 8px;
 }
+
 .legend-item {
     display: flex;
     align-items: center;
@@ -230,6 +252,7 @@ const stats = computed(() => {
     font-size: 13px;
     color: #606266;
 }
+
 .dot {
     width: 8px;
     height: 8px;
@@ -240,6 +263,7 @@ const stats = computed(() => {
 :global(html.dark) .analysis-glass-card {
     background: #1e1e1e;
 }
+
 :global(html.dark) .value {
     color: #e5eaf3;
 }
