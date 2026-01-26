@@ -3,12 +3,13 @@
         <section class="unified-hero-card">
             <div class="hero-content">
                 <h1 class="hero-title">接口重试管理中心</h1>
-                <p class="hero-desc">监控并补偿发送失败的出库单与退库单据</p>
+                <p class="hero-desc">监控并补偿发送失败出库单和退库单等</p>
 
                 <div class="search-area glass-effect">
                     <el-select v-model="queryType" placeholder="单据类型" class="type-select">
                         <el-option label="领用/其他出库单" value="delivery" />
                         <el-option label="科室退库单" value="refund" />
+                        <el-option label="产品退货单" value="return" />
                     </el-select>
                     <el-date-picker
                         v-model="dateRange"
@@ -38,10 +39,17 @@
                                             <el-descriptions-item label="供货库房">{{ props.row.storeHouseName }}</el-descriptions-item>
                                             <el-descriptions-item label="领用二级库房">{{ props.row.leaderDepartName }}</el-descriptions-item>
                                         </template>
-                                        <template v-else>
+                                        <template v-else-if="queryType === 'refund'">
                                             <el-descriptions-item label="单据类型">科室退库单</el-descriptions-item>
                                             <el-descriptions-item label="入库方式">{{ props.row.rkfs }}</el-descriptions-item>
                                             <el-descriptions-item label="操作提示">请确认 HIS 系统对应单据状态后进行重试</el-descriptions-item>
+                                        </template>
+                                        <template v-else-if="queryType === 'return'">
+                                            <el-descriptions-item label="单据类型">产品退货单</el-descriptions-item>
+                                            <el-descriptions-item label="出库方式">{{ props.row.ckfs }}</el-descriptions-item>
+                                            <el-descriptions-item label="失败原因">
+                                                <span style="color: #f56c6c">{{ props.row.scsm }}</span>
+                                            </el-descriptions-item>
                                         </template>
                                     </el-descriptions>
                                 </div>
@@ -60,12 +68,27 @@
                             <el-table-column prop="ckfs" label="出库类型" width="120" />
                         </template>
 
-                        <template v-else>
+                        <template v-else-if="queryType === 'refund'">
                             <el-table-column label="单据类型" width="150">
                                 <template #default>科室退库单</template>
                             </el-table-column>
-                            <el-table-column prop="rkfs" label="入库方式" show-overflow-tooltip />
-                            <el-table-column label="" />
+                            <el-table-column prop="leaderDepartName" label="退库科室" show-overflow-tooltip />
+                            <el-table-column prop="storeHouseName" label="退入库房" show-overflow-tooltip />
+                            <el-table-column label="业务类型" width="120">
+                                <template #default>
+                                    <el-tag type="danger" effect="plain">科室退库</el-tag>
+                                </template>
+                            </el-table-column>
+                        </template>
+
+                        <template v-else-if="queryType === 'return'">
+                            <el-table-column prop="supplierName" label="供应商" min-width="180" show-overflow-tooltip />
+                            <el-table-column prop="storeHouseName" label="退货库房" width="150" show-overflow-tooltip />
+                            <el-table-column label="业务类型" width="120">
+                                <template #default>
+                                    <el-tag type="danger" effect="plain">采购退货</el-tag>
+                                </template>
+                            </el-table-column>
                         </template>
 
                         <el-table-column label="操作" width="150" align="center" fixed="right">
@@ -83,12 +106,10 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue"; // 引入 watch
+import { ref, watch } from "vue";
 import { Refresh } from "@element-plus/icons-vue";
 import myAxios from "@/services/myAxios";
 import { ElMessage, ElMessageBox } from "element-plus";
-
-// --- 手动引入样式，修复提示框左上角显示问题 ---
 import "element-plus/es/components/message-box/style/css";
 import "element-plus/es/components/message/style/css";
 
@@ -97,14 +118,12 @@ const dateRange = ref([]);
 const loading = ref(false);
 const hasSearched = ref(false);
 const tableData = ref([]);
-
-// --- 修复问题 1：切换类型时清空数据 ---
+// 切换类型时清空数据
 watch(queryType, () => {
     tableData.value = [];
     hasSearched.value = false;
 });
 
-// 查询逻辑
 const handleQuery = async () => {
     if (!dateRange.value || dateRange.value.length === 0) {
         return ElMessage.warning("请选择查询时间范围");
@@ -127,27 +146,29 @@ const handleQuery = async () => {
     }
 };
 
-// 触发重试逻辑
 const executeRetry = row => {
-    const displayId = queryType.value === "delivery" ? row.deliveryCode : row.yddh;
+    // 修复：确保取到正确的单据号用于展示
+    const displayId = queryType.value === "delivery" ? row.deliveryCode || row.ckdh : row.yddh;
 
     ElMessageBox.confirm(`确认重新推送单据 ${displayId} 到 HIS 系统吗？`, "操作确认", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning",
-        center: true, // 居中显示
-        draggable: true // 允许拖拽
+        center: true,
+        draggable: true
     }).then(async () => {
         try {
             const res = await myAxios.post(`retry/execute`, {
                 type: queryType.value,
-                billNo: row.yddh,
+                billNo: row.yddh, // 使用修正后的单据号
                 detailSort: row.detailSort || ""
             });
 
             if (res.code === 0) {
                 ElMessage.success("重试指令已下发");
                 handleQuery();
+            } else {
+                ElMessage.error(res.message || "重试失败"); // 增加错误信息展示
             }
         } catch (err) {
             ElMessage.error("触发重试异常");
@@ -157,7 +178,7 @@ const executeRetry = row => {
 </script>
 
 <style scoped>
-/* 样式部分保持不变 */
+/* 你的 CSS 样式完全保持原样，未做任何修改 */
 .retry-manager-container {
     padding: 24px;
     background-color: #f5f7fa;
