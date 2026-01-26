@@ -57,6 +57,18 @@ func HandleRetryList(c *gin.Context) {
 		res.Message = "查询成功"
 		res.Data = r.Re
 		c.JSON(http.StatusOK, res)
+	} else if req.QueryType == "return" {
+		r := &controller.ReturnRequestInfo{
+			Count: new(int64),
+			Rn:    &[]model.ReturnNo{},
+		}
+		if err := r.GetReturnNo(req.StartTime, req.EndTime); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		res.Message = "查询成功"
+		res.Data = r.Rn
+		c.JSON(http.StatusOK, res)
 	}
 }
 
