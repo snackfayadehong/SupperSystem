@@ -133,6 +133,7 @@ func (d *DeliveryRequestInfo) GetDeliveryNo(startDate, endDate string) (err erro
 		Where("d.Status IN ?", []int{61, 71, 41, 81, 22, 91, 19, 29, 99}).
 		Where("(d.IsStockGoods <> '1' OR d.IsStockGoods IS NULL)").
 		Where("ISNULL(dr.OutNumber, '') = ?", "").
+		Where("dr.SendStatus <>?", 1).
 		Where("dr.UpdateTime >= ? AND dr.UpdateTime <= ?", startDate, endDate).
 		Group("dr.DetailSort, d.DeliveryID,d.DeliveryCode,DEPT.DepartmentName,de.DepartmentName").
 		Find(&d.De)
