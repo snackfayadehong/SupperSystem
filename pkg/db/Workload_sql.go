@@ -12,7 +12,7 @@ InboundBase AS (
     WHERE a.billstate IN ('41','51') AND b.IsVoid = 0 AND a.EnterDate >= ? AND a.EnterDate <= ?
     UNION ALL
     SELECT em.EmployeeName, a.DeptCode, a.InStoreNo, b.ProductInfoID, b.Amount, b.PurchasePrice
-    FROM TB_Warehouse a JOIN TB_WarehouseDetail b ON a.InStoreNo = b.InStoreNo JOIN TB_Employee em ON em.HRCode = a.Auditor
+    FROM TB_Warehouse a JOIN TB_WarehouseDetail b ON a.InStoreNo = b.InStoreNo JOIN TB_Employee em ON em.HRCode = a.Confirmer
     WHERE a.Status = 21 AND a.WarehouseType IN (0,1) AND a.Source = 1 AND a.ConfirmerDate >= ? AND a.ConfirmerDate <= ?
 ),
 OutboundBase AS (
@@ -70,4 +70,5 @@ SELECT
     d.DepartmentName as FallbackName
 FROM FinalResults f
 LEFT JOIN TB_Department d ON f.Dept = d.DeptCode
+ORDER BY  OperatorName,OperationType
 `
