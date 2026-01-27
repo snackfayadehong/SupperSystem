@@ -37,18 +37,19 @@ type KLBRBaseResponse struct {
 // FhxxData 统一明细数据结构
 // 包含出库、退库、入库、产品信息变更等可能用到的字段,向下兼容
 type FhxxData struct {
-	Ckdh   string `json:"ckdh"`
-	Rkdh   string `json:"rkdh"`
+	Ckdh   string `json:"ckdh"` // 出库单号
+	Rkdh   string `json:"rkdh"` // 入库单号
 	Sczt   string `json:"sczt"`
-	Scsm   string `json:"scsm"`
-	Ypspdm string `json:"ypspdm"`
-	Ypdm   string `json:"yppdm"`
+	Scsm   string `json:"scsm"`   //说明信息
+	Ydcldm string `json:"ydcldm"` // 怡道材料代码
+	Ypdm   string `json:"ypdm"`   // 材料代码
+	Scdm   string `json:"scdm"`   // 0成功
 }
 
 // GenericResponse 通用响应包装结构
 type GenericResponse struct {
 	KLBRBaseResponse
-	data struct {
+	Data struct {
 		Fhxx []FhxxData `json:"fhxx"`
 	} `json:"data"`
 }
@@ -93,10 +94,10 @@ func SendToHis(requestData interface{}, apiSuffix, headerType string) (*FhxxData
 		return nil, fmt.Errorf("接口返回失败状态(%s): %s", genericRes.AckCode, genericRes.AckMessage)
 	}
 	// 6. Fhxx检查
-	if len(genericRes.data.Fhxx) == 0 {
+	if len(genericRes.Data.Fhxx) == 0 {
 		return nil, fmt.Errorf("响应数据中缺少Fhxx明细")
 	}
-	fhxx := genericRes.data.Fhxx[0]
+	fhxx := genericRes.Data.Fhxx[0]
 	return &fhxx, nil
 }
 
