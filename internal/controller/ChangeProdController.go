@@ -6,7 +6,6 @@ import (
 	"SupperSystem/pkg/integration"
 	"SupperSystem/pkg/logger"
 	"SupperSystem/pkg/utils"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -45,13 +44,8 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	his.Xgczy = p.HRCode          // 修改人员工号
 	// 去除制表符
 	utils.RemoveTabsFromStruct(&his)
-	// 2. json序列化
-	data, err := json.Marshal(his)
-	if err != nil {
-		return err
-	}
 	// 3. 接口调用
-	fhxx, err := integration.SendToHis(data, "MIS-proc-Edit-cljjxx/1.0", "MIS-proc-Edit-cljjxx")
+	fhxx, err := integration.SendToHis(his, "MIS-proc-Edit-cljjxx/1.0", "MIS-proc-Edit-cljjxx")
 	if err != nil {
 		return err
 	}
