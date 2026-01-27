@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,46 +34,70 @@ type KLBRBaseResponse struct {
 	AckMessageID string `json:"ackMessageId"`
 }
 
-// ProductChangeData 材料信息变更返回
-type ProductChangeData struct {
-	Fhxx []struct {
-		Sczt   string `json:"sczt"`
-		Scsm   string `json:"scsm"`
-		Ypspdm string `json:"ypspdm"`
-		Ypdm   string `json:"ypdm"`
-	} `json:"fhxx"`
+// FhxxData 统一明细数据结构
+// 包含出库、退库、入库、产品信息变更等可能用到的字段,向下兼容
+type FhxxData struct {
+	Ckdh   string `json:"ckdh"`
+	Rkdh   string `json:"rkdh"`
+	Sczt   string `json:"sczt"`
+	Scsm   string `json:"scsm"`
+	Ypspdm string `json:"ypspdm"`
+	Ypdm   string `json:"yppdm"`
 }
 
-// DeliveryData 出库信息返回接口
-type DeliveryData struct {
-	Fhxx []struct {
-		Ckdh string `json:"ckdh"`
-		Sczt string `json:"sczt"`
-		Scsm string `json:"scsm"`
-	} `json:"fhxx"`
+// GenericResponse 通用响应包装结构
+type GenericResponse struct {
+	KLBRBaseResponse
+	data struct {
+		Fhxx []FhxxData `json:"fhxx"`
+	} `json:"data"`
 }
-
-// RefundData 科室退库/入库信息返回 rkfs 02
-type RefundData struct {
-	Fhxx []struct {
-		Rkdh string `json:"rkdh"`
-		Sczt string `json:"sczt"`
-		Scsm string `json:"scsm"`
-	}
-}
-
-//type KLBRResPonse[T any] struct {
-//	KLBRBaseResponse
-//	Data struct {
-//		Fhxx []json.RawMessage `json:"fhxx"`
-//	} `json:"data"`
-//}
 
 // KLBRRequest 柯林布瑞接口请求参数
 type KLBRRequest struct {
 	Headers *KLBRReqHeaders
 	Url     string
 	ReqData []byte
+}
+
+// SendToHis 通用发送与解析方法
+// requestData: 待序列化的请求结构体 如；model.DeliveryFullSerializer
+// apiSuffix: 接口的后缀的Url 如: "herp-clckgl/1.0"
+// headerType: 签名用的ServiceCode 如: "herp-clckgl"
+func SendToHis(requestData interface{}, apiSuffix, headerType string) (*FhxxData, error) {
+	// 1. 序列化请求Data
+	data, err := json.Marshal(requestData)
+	if err != nil {
+		return nil, fmt.Errorf("请求数据序列化失败: %w", err)
+	}
+	// 2. 构建基础请求对象
+	k := KLBRRequest{
+		Headers: NewReqHeaders(headerType),
+		Url:     BaseUrl + apiSuffix,
+		ReqData: data,
+	}
+	// 3. Http Post
+	resBytes, err := k.KLBRHttpPost()
+	if err != nil {
+		return nil, fmt.Errorf("HTTP请求失败: %w", err)
+	}
+	// 4. 解析到通用返回结构
+	var genericRes GenericResponse
+	if err = json.Unmarshal(*resBytes, &genericRes); err != nil {
+		logMsg := fmt.Sprintf("\r\n事件:响应解析异常\r\n原始响应:%s\r\n%s\r\n", string(*resBytes), logger.LoggerEndStr)
+		logger.AsyncLog(logMsg)
+		return nil, fmt.Errorf("响应JSON解析失败: %w", err)
+	}
+	// 5. 业务校验
+	if genericRes.AckCode != "200.1" {
+		return nil, fmt.Errorf("接口返回失败状态(%s): %s", genericRes.AckCode, genericRes.AckMessage)
+	}
+	// 6. Fhxx检查
+	if len(genericRes.data.Fhxx) == 0 {
+		return nil, fmt.Errorf("响应数据中缺少Fhxx明细")
+	}
+	fhxx := genericRes.data.Fhxx[0]
+	return &fhxx, nil
 }
 
 // NewReqHeaders  KLBRReqHeaders请求头构造函数，根据入参信息生成请求Headers
@@ -123,22 +148,3 @@ func (k *KLBRRequest) KLBRHttpPost() (*[]byte, error) {
 	repBytes, _ := io.ReadAll(rep.Body)
 	return &repBytes, nil
 }
-
-// ParseResPonse 处理柯林布瑞接口Fhxx字段不固定
-//func ParseResPonse[T any](jsonData []byte) (KLBRBaseResponse, []T, error) {
-//	var resP KLBRResPonse[T]
-//	err := json.Unmarshal(jsonData, &resP)
-//	if err != nil {
-//		return KLBRBaseResponse{}, nil, err
-//	}
-//	var fhxxList []T
-//	for _, raw := range resP.Data.Fhxx {
-//		var fhxx T
-//		err = json.Unmarshal(raw, &fhxx)
-//		if err != nil {
-//			return resP.KLBRBaseResponse, nil, err
-//		}
-//		fhxxList = append(fhxxList, fhxx)
-//	}
-//	return resP.KLBRBaseResponse, fhxxList, nil
-//}

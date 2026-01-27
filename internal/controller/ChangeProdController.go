@@ -22,18 +22,12 @@ type RequestInfo struct {
 	C *[]model.ChangeInfoElement
 }
 
-type klbrRes struct {
-	integration.KLBRBaseResponse
-	Data integration.ProductChangeData `json:"data"`
-}
-
 const UpdateCateCodeSql = "Update TB_ProductInfo Set CusCategoryCode = ? where ProductInfoID = ?"
 const UpdateHospitalSpecSql = "Update TB_ProductInfo set HospitalSpec = ? where ProductInfoID = ?"
 const UpdateHospitalNameSql = "Update TB_ProductInfo Set HisProductCode3 =? where ProductInfoID = ?"
 const UpdateOpenTenderSql = "Update TB_ProductInfo set OpenTender = ? where ProductInfoID = ?"
 
 func ChangeHisProductInfo(p model.ChangeInfoElement) error {
-	var klbrres klbrRes
 	// 1. 查询HIS需要的产品基本信息
 	var his model.ChangeHisProductInfoModel
 	if db := clientDb.DB.Raw(clientDb.ProductInfo_UpdatePostDataSQL, p.Code).Find(&his); db.Error != nil {
@@ -49,33 +43,6 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 	}
 	his.Kfbz = p.EighteenProdType // 18类重点监控耗材序号
 	his.Xgczy = p.HRCode          // 修改人员工号
-	//val := reflect.ValueOf(&his)
-	//if val.Kind() == reflect.Ptr { // 检查 val 是否为指针
-	//	val = val.Elem() // 获取指针指向的实际值
-	//}
-	//if val.Kind() == reflect.Struct { // 确保 val 是一个结构体
-	//	fieldNum := val.NumField() // 获取该结构体有几个字段
-	//	// 遍历结构体字段
-	//	for i := 0; i < fieldNum; i++ {
-	//		field := val.Field(i)
-	//		if !field.CanSet() { // 检查字段是否可以设置
-	//			return fmt.Errorf("%s", "value can't be set")
-	//		}
-	//		switch field.Kind() {
-	//		case reflect.String:
-	//			if field.String() == "" {
-	//				field.SetString("20240815")
-	//			}
-	//		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-	//			if field.Int() == 0 {
-	//				field.SetInt(20240815)
-	//			}
-	//		default:
-	//			continue
-	//		}
-	//	}
-	//
-	//}
 	// 去除制表符
 	utils.RemoveTabsFromStruct(&his)
 	// 2. json序列化
@@ -84,28 +51,12 @@ func ChangeHisProductInfo(p model.ChangeInfoElement) error {
 		return err
 	}
 	// 3. 接口调用
-	k := integration.KLBRRequest{}
-	k.Headers = integration.NewReqHeaders("MIS-proc-Edit-cljjxx")
-	k.Url = integration.BaseUrl + "MIS-proc-Edit-cljjxx/1.0"
-	k.ReqData = data
-	res, err := k.KLBRHttpPost()
+	fhxx, err := integration.SendToHis(data, "MIS-proc-Edit-cljjxx/1.0", "MIS-proc-Edit-cljjxx")
 	if err != nil {
 		return err
 	}
-	// 4. 接口返回
-	if err = json.Unmarshal(*res, &klbrres); err != nil {
-		return err
-	}
-	//baseRep, fhxxList, err := integration.ParseResPonse[map[string]interface{}](*res)
-	//if err != nil {
-	//	return fmt.Errorf("ParseResPonse err: %v", err)
-	//}
-	if klbrres.AckCode != "200.1" {
-		return fmt.Errorf("%s", klbrres.AckMessage)
-	} else {
-		logMsg := fmt.Sprintf("\r\n事件:His接口返回\r\n出参:%s\r\n%s\r\n", klbrres.Data, logger.LoggerEndStr)
-		logger.AsyncLog(logMsg)
-	}
+	logMsg := fmt.Sprintf("\r\n事件:His接口返回\r\n出参:%s\r\n%s\r\n", fhxx, logger.LoggerEndStr)
+	logger.AsyncLog(logMsg)
 	return nil
 }
 

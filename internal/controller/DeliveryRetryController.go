@@ -5,7 +5,6 @@ import (
 	clientDb "SupperSystem/pkg/db"
 	"SupperSystem/pkg/integration"
 	"SupperSystem/pkg/logger"
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -16,57 +15,23 @@ type DeliveryRequestInfo struct {
 	De    *[]model.DeliveryNo
 }
 
-// DeliveryResponseInfo 接口出参
-type DeliveryResponseInfo struct {
-	integration.KLBRBaseResponse
-	Data integration.DeliveryData `json:"data"`
-}
-
 func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error {
 	full := &model.DeliveryFullSerializer{DeliveryNo: &raw} // 构造用于请求 HIS 的接口请求参数
 	raw2 := full.DeliverySerialize()
-	data, err := json.Marshal(raw2)
+	fhxx, err := integration.SendToHis(raw2, "herp-clckgl/1.0", "herp-clckgl")
 	if err != nil {
-		return fmt.Errorf("序列化请求数据失败: %w", err)
+		return err
 	}
-
-	// 构建请求
-	k := integration.KLBRRequest{
-		Headers: integration.NewReqHeaders("herp-clckgl"),
-		Url:     integration.BaseUrl + "herp-clckgl/1.0",
-		ReqData: data,
+	// 校验单据号
+	// 逻辑：如果状态不是 "0"(未处理)，则必须有回传的单据号(Ckdh)
+	// strings.TrimSpace 用于防止全是空格的情况
+	hasId := strings.TrimSpace(fhxx.Ckdh) != ""
+	if !hasId && strings.TrimSpace(fhxx.Sczt) != "0" {
+		return fmt.Errorf("接口业务处理异常: %s", fhxx.Scsm)
 	}
-	// 发送 HTTP请求
-	res, err := k.KLBRHttpPost()
-	if err != nil {
-		return fmt.Errorf("HTTP请求失败: %w", err)
-	}
-
-	// 解析响应
-	var HisRes DeliveryResponseInfo
-	if err = json.Unmarshal(*res, &HisRes); err != nil {
-		logMsg := fmt.Sprintf("\r\n事件:接口请求跟踪\r\n出参：%v\r\n%s\r\n", res, logger.LoggerEndStr)
-		logger.AsyncLog(logMsg)
-		return fmt.Errorf("解析响应失败: %w", err)
-	}
-
-	// 检查响应状态
-	if HisRes.AckCode != "200.1" {
-		return fmt.Errorf("接口返回错误1: %s", HisRes.AckMessage)
-	}
-
-	if len(HisRes.Data.Fhxx) == 0 {
-		return fmt.Errorf("响应数据中缺少Fhxx信息")
-	}
-
-	fhxx := HisRes.Data.Fhxx[0]
-	if strings.TrimSpace(fhxx.Ckdh) == "" && strings.TrimSpace(fhxx.Sczt) != "0" {
-		return fmt.Errorf("接口返回错误2: %s", fhxx.Scsm)
-	}
-
-	// 记录成功日志
-	logMsg := fmt.Sprintf("\r\n事件:接口请求跟踪\r\n出参:%+v\r\n%s\r\n", HisRes.Data, logger.LoggerEndStr)
-	logger.AsyncLog(logMsg)
+	// 记录成功的业务日志
+	logger.AsyncLog(fmt.Sprintf("\r\n事件:接口调用成功\r\n单号:%s\r\n说明:%s\r\n%s\r\n",
+		fhxx.Ckdh, fhxx.Scsm, logger.LoggerEndStr))
 
 	// 更新数据库
 	tx := clientDb.DB.Begin()
@@ -80,10 +45,6 @@ func (d *DeliveryRequestInfo) processSingleDelivery(raw model.DeliveryNo) error 
 	}()
 	hisCkdh := fhxx.Ckdh
 
-	//if db := tx.Exec(clientDb.UpdateDelivery_Sql, hisCkdh, deliveryid, raw.DetailSort); db.Error != nil {
-	//	tx.Rollback()
-	//	return fmt.Errorf("更新数据库失败: %w", db.Error)
-	//}
 	if err := tx.Table("TB_DeliveryApplyDetailRecord").
 		Where("DeliveryId = ? AND DetailSort = ?", raw.Ckdh, raw.DetailSort).
 		Update("OutNumber", hisCkdh).Error; err != nil {
