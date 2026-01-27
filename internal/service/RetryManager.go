@@ -119,5 +119,23 @@ func HandleRetryExecute(c *gin.Context) {
 		}
 		res.Message = "处理成功"
 		c.JSON(http.StatusOK, res)
+	} else if req.Type == "return" {
+		r := controller.ReturnRequestInfo{
+			Count: new(int64),
+			Rn: &[]model.ReturnNo{
+				{
+					Ckdh: req.BillNo,
+					Ckfs: "03",
+				},
+			},
+		}
+		if err := r.ReturnNoRetryToHis(); err != nil {
+			res.Message = err.Error()
+			res.Code = 1
+			c.JSON(http.StatusInternalServerError, res)
+			return
+		}
+		res.Message = "处理成功"
+		c.JSON(http.StatusOK, res)
 	}
 }
