@@ -34,11 +34,10 @@ type Config struct {
 	IPWhite struct {
 		IPWhiteList []string `json:"IPWhiteList"`
 	} `json:"IPWhite"`
-	CustomTaskTime struct {
-		Run       int `json:"Run"`
-		StartTime int `json:"StartTime"`
-		EndTime   int `json:"EndTime"`
-	} `json:"CustomTaskTime"`
+	Cron struct {
+		DeliverySchedule string `json:"DeliverySchedule"`
+		RefundSchedule   string `json:"RefundSchedule"`
+	} `json:"Cron"`
 }
 
 // InitSetting 初始化配置

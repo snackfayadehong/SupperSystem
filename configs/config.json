@@ -8,8 +8,8 @@
   "DBClient": {
     "ip": "127.0.0.1",
     "username": "sa",
-    "password": "20010126",
-    "db_name": "WZ_MY",
+    "password": "“,
+	"db_name": "",
     "isEc": 0
   },
   "IPWhite": {
@@ -17,9 +17,8 @@
       "127.0.0.1"
     ]
   },
-  "CustomTaskTime": {
-    "Run": 1,
-    "StartTime": 0,
-    "EndTime": 0
+  "Cron": {
+    "DeliverySchedule": "_",
+    "RefundSchedule": "_"
   }
 }

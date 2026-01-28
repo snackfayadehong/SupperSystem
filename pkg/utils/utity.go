@@ -1,23 +1,15 @@
 package utils
 
 import (
-	"SupperSystem/configs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 
 	"golang.org/x/sync/errgroup"
 )
 
 // 工具包
-
-// IsWithinWorkingTime 判断是否在工作时间;决定是否执行作业
-func IsWithinWorkingTime() bool {
-	hour := time.Now().Hour()
-	return conf.Configs.CustomTaskTime.Run == 0 && hour >= conf.Configs.CustomTaskTime.StartTime && hour < conf.Configs.CustomTaskTime.EndTime
-}
 
 // RemoveAssignDir 清楚目录下指定后缀文件名
 func RemoveAssignDir(dirPath, suffix string) (err error) {

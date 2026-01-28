@@ -9,9 +9,9 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// 重写gormLogger逻辑
+// 重写 gormLogger 逻辑
 var (
-	infoStr     = "\r\n事件:%s\r\n%s\r\n"
+	infoStr     = "\r\n事件:%s%s"
 	warnStr     = "\r\n事件:SQL执行,[warn]%s\r\n"
 	errStr      = "\r\n事件:SQL执行,[err]%s\r\n"
 	traceStr    = "\r\n事件:SQL执行\r\n时间:%.3fms\r\n行数:%v\r\nSQL:%s\r\n%s\r\n"
